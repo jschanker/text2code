@@ -1,0 +1,55 @@
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset = "utf-8">
+    <!--<title>Pseudocode => Python Converter</title>-->
+    <title>Text 2 Code</title>
+    <link rel = "stylesheet" href = "styles.css">
+    <script src="blockly/blockly_compressed.js"></script>
+    <script src="blockly/blocks_compressed.js"></script>
+    <script src="blockly/javascript_compressed.js"></script>
+    <!--<script src="blockly/python_compressed.js"></script>-->
+    <script src="blockly/msg/js/en.js"></script>
+  </head>
+  <body>
+  	<header>
+  	  <h1><span id = "textHeader">Text</span> <span id = "twoHeader">2</span> <span id = "codeTextHeader">Code</span></h1>
+  	</header>
+  	<form>
+  	  <!--Describe the procedure to <span id = "question"></span>-->
+  	  <div class = "tableContainer">
+  	  	<div class = "tableRow">
+  	  	  <div class = "tableCell" id = "pseudocodeCell">
+  	        <h2><label for = "pseudocode">Text</label>:</h2>
+  	        <textarea id = "pseudocode">go through every number, set a to -50. if test, then not implemented yet.</textarea>
+  	      </div>
+  	      <div class = "tableCell" id = "convertCell">
+  	        <button id = "convertBtn" type = "button">Convert =></button>
+  	      </div>
+  	      <div class = "tableCell" id = "codeCell">
+            <h2><label for = "startBlocks">Blockly Code</label>:</h2>
+            <div id = "blocklyDiv">
+              <xml id = "toolbox" style = "display: none">
+              </xml>
+              <xml id="startBlocks" style="display: none">
+
+              </xml>
+            </div>
+  	      </div>
+  	    </div>
+      </div>
+      <footer>
+       <h3><em>If you can describe the solution, you can code it. (At least that's the goal.)</em></h3>
+      </footer>
+      <script src = "processor.js"></script>
+      <script>
+        "use strict";
+        document.getElementById("convertBtn").addEventListener('click', processText);
+        //Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: document.getElementById('toolbox')});
+        Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: undefined,scrollbars:true});
+        Blockly.Xml.domToWorkspace(Blockly.mainWorkspace, document.getElementById('startBlocks'));
+      </script>
+  	</form>
+  </body>
+</html>
