@@ -14,21 +14,62 @@ function Part(processFunc, args) {
   this.args = args;
 }
 
-function generateControlsForBlock(blockAttributes) {
+function generateControlsForBlock(blockAttributes, varIndex, fromIndex, toIndex, doIndex, byIndex) {
   var XMLCode = "";
+  var variableName = blockAttributes[1][varIndex] ? blockAttributes[1][varIndex] : "i";
+  var fromValue = blockAttributes[1][fromIndex] ? generateCodeForStatement(blockAttributes[1][fromIndex]) : 
+                  "<block type = \"math_number\"><field name = \"NUM\">0</field></block>";
+  var toValue = blockAttributes[1][toIndex] ? generateCodeForStatement(blockAttributes[1][toIndex]) : 
+                  "<block type = \"math_number\"><field name = \"NUM\">1</field></block>";
+  var byValue = blockAttributes[1][byIndex] ? generateCodeForStatement(blockAttributes[1][byIndex]) : 
+                  "<block type = \"math_number\"><field name = \"NUM\">1</field></block>";
+  var statementAttr = blockAttributes[1][doIndex] ? generateCodeForStatement(blockAttributes[1][doIndex]) : "";
+
   XMLCode += "<block type = \"controls_for\">";
   //console.log(blockAttributes[1][0] + "\n" + blockAttributes[1][1] + "\n" + blockAttributes[1][2] + "\n" + blockAttributes[1][3][0]);
-  XMLCode += "<field name = \"VAR\">" + blockAttributes[1][1] + "</field>";
-  XMLCode += "<value name = \"FROM\"><block type = \"math_number\"><field name = \"NUM\">0</field></block></value>";
-  XMLCode += "<value name = \"TO\"><block type = \"math_number\"><field name = \"NUM\">2</field></block></value>";
-  XMLCode += "<value name = \"BY\"><block type = \"math_number\"><field name = \"NUM\">1</field></block></value>";
+  XMLCode += "<field name = \"VAR\">" + variableName + "</field>";
+  XMLCode += "<value name = \"FROM\">" + fromValue + "</value>";
+  XMLCode += "<value name = \"TO\">" + toValue + "</value>";
+  XMLCode += "<value name = \"BY\">" + byValue + "</value>";
   //XMLCode += "<statement></statement>";
-  if(blockAttributes[1][3]) {
-    XMLCode += "<statement name = \"DO\">" + generateCodeForStatement(blockAttributes[1][3]) + "</next></block></statement>";
-  }
+  XMLCode += "<statement name = \"DO\">" + statementAttr + "</next></block></statement>";
   //XMLCode += "</block>";
   XMLCode += "<next>";
   return XMLCode;
+}
+
+function generateControlsForBlockLessThan(blockAttributes) {
+  return generateControlsForBlock(blockAttributes, 1, undefined, 3, 5);
+}
+
+function generateControlsForBlockFromTo(blockAttributes) {
+  return generateControlsForBlock(blockAttributes, 1, 3, 5, 7);
+}
+
+function generateControlsWhileUntil(blockAttributes, testIndex, doIndex, isUntil) {
+  var XMLCode = "";
+  var mode = isUntil ? "UNTIL" : "WHILE";
+  var testValue = blockAttributes[1][testIndex] ? generateCodeForStatement(blockAttributes[1][testIndex]) : 
+                  "<block type = \"logic_boolean\"><field name = \"BOOL\">false</field></block>";
+  var statementAttr = blockAttributes[1][doIndex] ? generateCodeForStatement(blockAttributes[1][doIndex]) : "";
+
+  XMLCode += "<block type = \"controls_whileUntil\">";
+  XMLCode += "<field name = \"MODE\">" + mode + "</field>";
+  //console.log(blockAttributes[1][0] + "\n" + blockAttributes[1][1] + "\n" + blockAttributes[1][2] + "\n" + blockAttributes[1][3][0]);
+  XMLCode += "<value name = \"BOOL\">" + testValue + "</value>";
+  //XMLCode += "<statement></statement>";
+  XMLCode += "<statement name = \"DO\">" + statementAttr + "</next></block></statement>";
+  //XMLCode += "</block>";
+  XMLCode += "<next>";
+  return XMLCode;
+}
+
+function generateControlsWhile(blockAttributes) {
+  return generateControlsWhileUntil(blockAttributes, 1, 3);
+}
+
+function generateControlsUntil(blockAttributes) {
+  return generateControlsWhileUntil(blockAttributes, 1, 3, true);
 }
 
 function generateControlsIfBlock(blockAttributes) {
@@ -80,7 +121,7 @@ function generateMathNumber(blockAttributes) {
   return XMLCode;
 }
 
-function generateMathArithmeticAdd(blockAttributes) {
+function generateMathArithmetic(blockAttributes, OP) {
   var XMLCode = "";
   //console.log(blockAttributes);
   XMLCode += "<block type = \"math_arithmetic\">";
@@ -89,7 +130,7 @@ function generateMathArithmeticAdd(blockAttributes) {
     XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
   }
 
-  XMLCode += "<field name = \"OP\">ADD</field>"; 
+  XMLCode += "<field name = \"OP\">" + OP + "</field>"; 
 
   if(blockAttributes[1][2]) {
     XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
@@ -98,9 +139,25 @@ function generateMathArithmeticAdd(blockAttributes) {
   return XMLCode;
 }
 
+function generateMathArithmeticAdd(blockAttributes) {
+  return generateMathArithmetic(blockAttributes, "ADD");
+}
+
+function generateMathArithmeticMinus(blockAttributes) {
+  return generateMathArithmetic(blockAttributes, "MINUS");
+}
+
+function generateMathArithmeticMultiply(blockAttributes) {
+  return generateMathArithmetic(blockAttributes, "MULTIPLY");
+}
+
+function generateMathArithmeticPower(blockAttributes) {
+  return generateMathArithmetic(blockAttributes, "POWER");
+}
+
 // REFACTOR FUNCTION : USE generateVariablesGet, generateVariablesSet and generateMathArithmeticAdd
 
-function generateVariablesIncrease(blockAttributes) {
+function generateVariablesUpdateVariable(blockAttributes, OP) {
   var XMLCode = "";
   XMLCode += "<block type = \"variables_set\">";
   //XMLCode += "</block>";
@@ -117,7 +174,7 @@ function generateVariablesIncrease(blockAttributes) {
                blockAttributes[1][1] + "</field></block></value>";
   }
 
-  XMLCode += "<field name = \"OP\">ADD</field>"; 
+  XMLCode += "<field name = \"OP\">" + OP + "</field>"; 
 
   if(blockAttributes[1][3]) {
     XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][3]) + "</value>";
@@ -130,6 +187,14 @@ function generateVariablesIncrease(blockAttributes) {
   XMLCode += "<next>";
 
   return XMLCode;
+}
+
+function generateVariablesIncrease(blockAttributes) {
+  return generateVariablesUpdateVariable(blockAttributes, "ADD");
+}
+
+function generateVariablesDecrease(blockAttributes) {
+  return generateVariablesUpdateVariable(blockAttributes, "MINUS");
 }
 
 function generateLogicBoolean(blockAttributes) {
@@ -238,19 +303,27 @@ function generateLogicCompareEQ(blockAttributes) {
 }
 
 var blockCodeGenerator = Object.freeze({
-  CONTROLS_FOR        : generateControlsForBlock,
-  CONTROLS_IF         : generateControlsIfBlock,
-  VARIABLES_SET       : generateVariablesSet,
-  VARIABLES_INCREASE  : generateVariablesIncrease,
-  VARIABLES_GET       : generateVariablesGet,
-  MATH_NUMBER         : generateMathNumber,
-  LOGIC_BOOLEAN       : generateLogicBoolean,
-  LOGIC_OPERATION_OR  : generateLogicOperationOr,
-  LOGIC_OPERATION_AND : generateLogicOperationAnd,
-  LOGIC_COMPARE_LT    : generateLogicCompareLT,
-  LOGIC_COMPARE_GT    : generateLogicCompareGT,
-  LOGIC_COMPARE_EQ    : generateLogicCompareEQ,
-  MATH_ARITHMETIC_ADD : generateMathArithmeticAdd
+  CONTROLS_FOR              : generateControlsForBlock,
+  CONTROLS_FOR_LESS_THAN    : generateControlsForBlockLessThan,
+  CONTROLS_FOR_FROM_TO      : generateControlsForBlockFromTo,
+  CONTROLS_WHILE            : generateControlsWhile,
+  CONTROLS_UNTIL            : generateControlsUntil,
+  CONTROLS_IF               : generateControlsIfBlock,
+  VARIABLES_SET             : generateVariablesSet,
+  VARIABLES_INCREASE        : generateVariablesIncrease,
+  VARIABLES_DECREASE        : generateVariablesDecrease,
+  VARIABLES_GET             : generateVariablesGet,
+  MATH_NUMBER               : generateMathNumber,
+  LOGIC_BOOLEAN             : generateLogicBoolean,
+  LOGIC_OPERATION_OR        : generateLogicOperationOr,
+  LOGIC_OPERATION_AND       : generateLogicOperationAnd,
+  LOGIC_COMPARE_LT          : generateLogicCompareLT,
+  LOGIC_COMPARE_GT          : generateLogicCompareGT,
+  LOGIC_COMPARE_EQ          : generateLogicCompareEQ,
+  MATH_ARITHMETIC_ADD       : generateMathArithmeticAdd,
+  MATH_ARITHMETIC_MINUS     : generateMathArithmeticMinus,
+  MATH_ARITHMETIC_MULTIPLY  : generateMathArithmeticMultiply,
+  MATH_ARITHMETIC_POWER     : generateMathArithmeticPower
 });
 
 function PartSchema(parts, blockCodeGenerator) {
@@ -271,8 +344,18 @@ function matchAndRemove(text, arr, params) {
 }
 
 function matchControlsFor(text, params) {
-  var keywordArr = ["for each", "for", "go through every", "go through each", 
-                    "go through", "for every", "every", "for all", "all", "each"];
+  var keywordArr = ["for each", "for every", "go through every", "go through each", 
+                    "go through", "every", "for all", "all", "each", "for"];
+  return matchAndRemove(text, keywordArr, params);
+}
+
+function matchControlsWhile(text, params) {
+  var keywordArr = ["repeat while", "do while", "while", "keep going while"];
+  return matchAndRemove(text, keywordArr, params);
+}
+
+function matchControlsUntil(text, params) {
+  var keywordArr = ["repeat until", "do until", "until", "keep going until"];
   return matchAndRemove(text, keywordArr, params);
 }
 
@@ -303,13 +386,23 @@ function matchBoolean(text, params) {
   return matchAndRemove(text, keywordArr, params);
 }
 
+function matchFrom(text, params) {
+  var keywordArr = ["from"];
+  return matchAndRemove(text, keywordArr, params);
+}
+
 function matchTo(text, params) {
   var keywordArr = ["to"];
   return matchAndRemove(text, keywordArr, params);
 }
 
 function matchIncrease(text, params) {
-  var keywordArr = ["increase", "augment"];
+  var keywordArr = ["increase", "augment", "increment"];
+  return matchAndRemove(text, keywordArr, params);
+}
+
+function matchDecrease(text, params) {
+  var keywordArr = ["decrease", "decrement"];
   return matchAndRemove(text, keywordArr, params);
 }
 
@@ -357,6 +450,30 @@ function matchPlus(text, params) {
   return matchAndRemove(text, keywordArr, params);  
 }
 
+function matchMinus(text, params) {
+  var keywordArr = ["-", "minus", "subtract"];
+
+  return matchAndRemove(text, keywordArr, params);  
+}
+
+function matchMultiply(text, params) {
+  var keywordArr = ["\\*", "multiply", "times"];
+
+  return matchAndRemove(text, keywordArr, params);  
+}
+
+function matchPower(text, params) {
+  var keywordArr = ["\\^", "raised to the", "to the", "power"];
+
+  return matchAndRemove(text, keywordArr, params);  
+}
+
+function matchPowerEnd(text, params) {
+  var keywordArr = ["power"];
+
+  return matchAndRemove(text, keywordArr, params);  
+}
+
 // HACK : REMOVE FUNCTION LATER
 function matchAtomicBooleanExpression(text, params) {
   var partSchemas = [];
@@ -388,6 +505,14 @@ function matchNumericalExpression(text, params) {
   var partSchemas = [];
   partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchPlus, matchNumericalExpression], 
                                   blockCodeGenerator.MATH_ARITHMETIC_ADD));
+  partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchMinus, matchNumericalExpression], 
+                                  blockCodeGenerator.MATH_ARITHMETIC_MINUS));
+  partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchMultiply, matchNumericalExpression], 
+                                  blockCodeGenerator.MATH_ARITHMETIC_MULTIPLY));
+  //partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchPower, matchNumericalExpression, matchPowerEnd], 
+  //                                blockCodeGenerator.MATH_ARITHMETIC_POWER));
+  partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchPower, matchNumericalExpression], 
+                                  blockCodeGenerator.MATH_ARITHMETIC_POWER));
 
   partSchemas.push(new PartSchema([matchInteger], blockCodeGenerator.MATH_NUMBER));
   partSchemas.push(new PartSchema([matchVariable], blockCodeGenerator.VARIABLES_GET));
@@ -484,8 +609,20 @@ function matchGeneralStatement(text, params) {
   	                                blockCodeGenerator.VARIABLES_SET) );
   partSchemas.push( new PartSchema([matchIncrease, matchVariable, matchBy, matchGeneralExpression],
                                     blockCodeGenerator.VARIABLES_INCREASE) );
-  partSchemas.push( new PartSchema([matchControlsFor, matchVariable, matchComma, matchGeneralStatement], 
-	                                  blockCodeGenerator.CONTROLS_FOR) );
+  partSchemas.push( new PartSchema([matchDecrease, matchVariable, matchBy, matchGeneralExpression],
+                                    blockCodeGenerator.VARIABLES_DECREASE) );
+  partSchemas.push( new PartSchema([matchControlsFor, matchVariable, matchLessThan, matchNumericalExpression,
+                                    matchComma, matchGeneralStatement], 
+                                    blockCodeGenerator.CONTROLS_FOR_LESS_THAN) );
+  partSchemas.push( new PartSchema([matchControlsFor, matchVariable, matchFrom, matchNumericalExpression, 
+                                    matchTo, matchNumericalExpression, matchComma, matchGeneralStatement], 
+                                    blockCodeGenerator.CONTROLS_FOR_FROM_TO) );
+  partSchemas.push( new PartSchema([matchControlsWhile, matchLogicalExpression, matchComma, matchGeneralStatement],
+                                    blockCodeGenerator.CONTROLS_WHILE) );
+  partSchemas.push( new PartSchema([matchControlsUntil, matchLogicalExpression, matchComma, matchGeneralStatement],
+                                    blockCodeGenerator.CONTROLS_UNTIL) );
+  //partSchemas.push( new PartSchema([matchControlsFor, matchVariable, matchComma, matchGeneralStatement], 
+	//                                  blockCodeGenerator.CONTROLS_FOR) );
   partSchemas.push( new PartSchema([matchControlsIf, matchGeneralExpression, matchComma, matchGeneralStatement],
                                     blockCodeGenerator.CONTROLS_IF) );
   partSchemas.push( new PartSchema([matchControlsIf, matchGeneralExpression, matchThen, matchGeneralStatement],
