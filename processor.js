@@ -151,6 +151,10 @@ function generateMathArithmeticMultiply(blockAttributes) {
   return generateMathArithmetic(blockAttributes, "MULTIPLY");
 }
 
+function generateMathArithmeticDivide(blockAttributes) {
+  return generateMathArithmetic(blockAttributes, "DIVIDE");
+}
+
 function generateMathArithmeticPower(blockAttributes) {
   return generateMathArithmetic(blockAttributes, "POWER");
 }
@@ -323,12 +327,15 @@ var blockCodeGenerator = Object.freeze({
   MATH_ARITHMETIC_ADD       : generateMathArithmeticAdd,
   MATH_ARITHMETIC_MINUS     : generateMathArithmeticMinus,
   MATH_ARITHMETIC_MULTIPLY  : generateMathArithmeticMultiply,
+  MATH_ARITHMETIC_DIVIDE    : generateMathArithmeticDivide,
   MATH_ARITHMETIC_POWER     : generateMathArithmeticPower
 });
 
-function PartSchema(parts, blockCodeGenerator) {
+function PartSchema(parts, blockCodeGenerator, splitFirst, splitPartIndex) {
   this.parts = parts;
   this.blockCodeGenerator = blockCodeGenerator;
+  this.splitFirst = splitFirst; // HACK : Fix later
+  this.splitPartIndex = splitPartIndex;
 }
 
 function matchAndRemove(text, arr, params) {
@@ -462,6 +469,12 @@ function matchMultiply(text, params) {
   return matchAndRemove(text, keywordArr, params);  
 }
 
+function matchDivide(text, params) {
+  var keywordArr = ["\\/", "divided by", "divide"];
+
+  return matchAndRemove(text, keywordArr, params);  
+}
+
 function matchPower(text, params) {
   var keywordArr = ["\\^", "raised to the", "to the", "power"];
 
@@ -509,6 +522,8 @@ function matchNumericalExpression(text, params) {
                                   blockCodeGenerator.MATH_ARITHMETIC_MINUS));
   partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchMultiply, matchNumericalExpression], 
                                   blockCodeGenerator.MATH_ARITHMETIC_MULTIPLY));
+  partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchDivide, matchNumericalExpression], 
+                                  blockCodeGenerator.MATH_ARITHMETIC_DIVIDE));
   //partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchPower, matchNumericalExpression, matchPowerEnd], 
   //                                blockCodeGenerator.MATH_ARITHMETIC_POWER));
   partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchPower, matchNumericalExpression], 
@@ -525,10 +540,14 @@ function matchNumericalExpression(text, params) {
 function matchLogicalExpression(text, params) {
   var partSchemas = [];
 
-  partSchemas.push(new PartSchema([matchAtomicBooleanExpression, matchOr, matchLogicalExpression], 
-                                  blockCodeGenerator.LOGIC_OPERATION_OR));
-  partSchemas.push(new PartSchema([matchAtomicBooleanExpression, matchAnd, matchLogicalExpression], 
-                                  blockCodeGenerator.LOGIC_OPERATION_AND));
+  partSchemas.push(new PartSchema([matchLogicalExpression, matchOr, matchLogicalExpression], 
+                                  blockCodeGenerator.LOGIC_OPERATION_OR, /or(.+)/i, 1));
+
+  partSchemas.push(new PartSchema([matchLogicalExpression, matchAnd, matchLogicalExpression], 
+                                  blockCodeGenerator.LOGIC_OPERATION_AND, /and(.+)/i, 1));
+
+  //partSchemas.push(new PartSchema([matchAtomicBooleanExpression, matchAnd, matchLogicalExpression], 
+  //                                blockCodeGenerator.LOGIC_OPERATION_AND));
 
   partSchemas.push(new PartSchema([matchAtomicNumericalExpression, matchLessThan, matchNumericalExpression], 
                                   blockCodeGenerator.LOGIC_COMPARE_LT));
@@ -583,11 +602,46 @@ function matchAny(text, params, partSchemas) {
   	partSchemas[i].parts.forEach(function(){
       statementParams.push([]);
   	});
-  	while(textRemaining !== null && j < partSchemas[i].parts.length) {
-  	  textRemaining = textRemaining.trim().toLowerCase();
-  	  textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
-  	  j++;
-  	}
+
+    // BEGIN HACK
+
+    if(partSchemas[i].splitFirst) {
+      var textRemainingArr = text.split(RegExp(partSchemas[i].splitFirst));
+      //console.log("Text: " + textRemainingArr[0] + " : " + textRemainingArr[1] + " # " + partSchemas[i].splitPartIndex);
+      if(textRemainingArr.length > 1) {
+        textRemaining = textRemainingArr[0];
+        while(textRemaining !== null && j < partSchemas[i].splitPartIndex) {
+          textRemaining = textRemaining.trim().toLowerCase();
+          textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
+          j++;
+        }
+        //console.log("Text1: ", textRemaining);
+        if(textRemaining !== null) {
+          j += 1;
+          textRemaining = textRemainingArr[1];
+          //console.log("Text2: ", textRemaining);
+          while(textRemaining !== null && j < partSchemas[i].parts.length) {
+            textRemaining = textRemaining.trim().toLowerCase();
+            textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
+            j++;
+          }
+          //console.log("Text3: ", textRemaining);
+        } 
+      } else {
+        textRemaining = null;
+      }
+    }
+
+    // END HACK
+
+    else {
+  	  while(textRemaining !== null && j < partSchemas[i].parts.length) {
+  	    textRemaining = textRemaining.trim().toLowerCase();
+  	    textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
+  	    j++;
+  	  }
+    }
+
   	foundMatchingSchema = (textRemaining !== null);
   	i++;
   }
@@ -626,7 +680,7 @@ function matchGeneralStatement(text, params) {
   partSchemas.push( new PartSchema([matchControlsIf, matchGeneralExpression, matchComma, matchGeneralStatement],
                                     blockCodeGenerator.CONTROLS_IF) );
   partSchemas.push( new PartSchema([matchControlsIf, matchGeneralExpression, matchThen, matchGeneralStatement],
-                                    blockCodeGenerator.CONTROLS_IF) );
+                                    blockCodeGenerator.CONTROLS_IF, /then(.+)/i, 2) );
 
   return matchAny(text, params, partSchemas);
 }
