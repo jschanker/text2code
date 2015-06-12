@@ -306,6 +306,19 @@ function generateLogicCompareEQ(blockAttributes) {
   return XMLCode;
 }
 
+var addedClosings = 0; // HACK
+
+function generateStatementBlock(blockAttributes) {
+  addedClosings++;
+  return generateCodeForStatement(blockAttributes[1][0]) + 
+         generateCodeForStatement(blockAttributes[1][2]);
+}
+
+function generateBracketStatement(blockAttributes) {
+  alert("Got");
+  return generateCodeForStatement(blockAttributes[1][1]);
+}
+
 var blockCodeGenerator = Object.freeze({
   CONTROLS_FOR              : generateControlsForBlock,
   CONTROLS_FOR_LESS_THAN    : generateControlsForBlockLessThan,
@@ -328,7 +341,9 @@ var blockCodeGenerator = Object.freeze({
   MATH_ARITHMETIC_MINUS     : generateMathArithmeticMinus,
   MATH_ARITHMETIC_MULTIPLY  : generateMathArithmeticMultiply,
   MATH_ARITHMETIC_DIVIDE    : generateMathArithmeticDivide,
-  MATH_ARITHMETIC_POWER     : generateMathArithmeticPower
+  MATH_ARITHMETIC_POWER     : generateMathArithmeticPower,
+  STATEMENT_BLOCK           : generateStatementBlock,
+  BRACKET_STATEMENT         : generateBracketStatement
 });
 
 function PartSchema(parts, blockCodeGenerator, splitFirst, splitPartIndex) {
@@ -487,6 +502,19 @@ function matchPowerEnd(text, params) {
   return matchAndRemove(text, keywordArr, params);  
 }
 
+function matchSemicolon(text, params) {
+  return matchAndRemove(text, ";", params);
+}
+
+function matchOpenBracket(text, params) {
+  //console.log( "OB: " + text + " " + matchAndRemove(text, "{", params) );
+  return matchAndRemove(text, "{", params);
+}
+
+function matchCloseBracket(text, params) {
+  return matchAndRemove(text, "}", params);
+}
+
 // HACK : REMOVE FUNCTION LATER
 function matchAtomicBooleanExpression(text, params) {
   var partSchemas = [];
@@ -586,7 +614,21 @@ function matchGeneralExpression(text, params) {
   //return matchNumericalExpression(text, params) || matchLogicalExpression(text, params);
 }
 
-function matchAny(text, params, partSchemas) {
+function hasMatchingBraces(textRemaining) {
+  var numberOfUnmatchedOpenBraces = 0;
+  for(var i = 0; i < textRemaining.length; i++) {
+    if(textRemaining.charAt(i) == "{")
+      numberOfUnmatchedOpenBraces++;
+    else if(textRemaining.charAt(i) == "}")
+      numberOfUnmatchedOpenBraces--;
+    if(numberOfUnmatchedOpenBraces < 0)
+      return false;
+  }
+
+  return numberOfUnmatchedOpenBraces == 0;
+}
+
+function matchAny(text, params, partSchemas, matchEntire) {
   var i = 0;
   var j;
   var textRemaining = text;
@@ -607,25 +649,39 @@ function matchAny(text, params, partSchemas) {
 
     if(partSchemas[i].splitFirst) {
       var textRemainingArr = text.split(RegExp(partSchemas[i].splitFirst));
-      //console.log("Text: " + textRemainingArr[0] + " : " + textRemainingArr[1] + " # " + partSchemas[i].splitPartIndex);
+      //console.log("Text: " + textRemainingArr[0] + " : " + textRemainingArr[1] + " : " + textRemainingArr[2] + " # " + partSchemas[i].splitFirst + "/" + textRemainingArr.length);
       if(textRemainingArr.length > 1) {
-        textRemaining = textRemainingArr[0];
-        while(textRemaining !== null && j < partSchemas[i].splitPartIndex) {
-          textRemaining = textRemaining.trim().toLowerCase();
-          textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
-          j++;
-        }
-        //console.log("Text1: ", textRemaining);
-        if(textRemaining !== null) {
-          j += 1;
-          textRemaining = textRemainingArr[1];
-          //console.log("Text2: ", textRemaining);
-          while(textRemaining !== null && j < partSchemas[i].parts.length) {
+        for(var k = 0; k < 1; k++) {
+          textRemaining = textRemainingArr[0];
+          for(var m = 1; m <= k; m++) {
+            textRemaining += textRemainingArr[m];
+          }
+          //if(!hasMatchingBraces(textRemaining))
+          //  break; // ANOTHER HACK
+          //console.log("TR:" + textRemaining);
+          while(textRemaining !== null && j < partSchemas[i].splitPartIndex) {
             textRemaining = textRemaining.trim().toLowerCase();
+            //console.log("T " + textRemaining + " " + j);
             textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
             j++;
           }
-          //console.log("Text3: ", textRemaining);
+          //console.log("Text1: ", textRemaining);
+          if(textRemaining !== null) {
+            j += 1;
+            textRemaining = textRemainingArr[k+1];
+            for(m = k+2; m < textRemainingArr.length; m++) {
+              textRemaining += textRemainingArr[m];
+            }
+            //console.log("Text2: ", textRemaining);
+            while(textRemaining !== null && j < partSchemas[i].parts.length) {
+              textRemaining = textRemaining.trim().toLowerCase();
+              textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
+              j++;
+            }
+            //console.log("Text3: ", textRemaining);
+            if(textRemaining !== null)
+              break;
+          }
         } 
       } else {
         textRemaining = null;
@@ -642,7 +698,9 @@ function matchAny(text, params, partSchemas) {
   	  }
     }
 
-  	foundMatchingSchema = (textRemaining !== null);
+    foundMatchingSchema = (textRemaining !== null && (!matchEntire || textRemaining.trim() === ""));
+    //foundMatchingSchema = (textRemaining !== null && textRemaining.trim() === "");
+  	//foundMatchingSchema = (textRemaining !== null);
   	i++;
   }
 
@@ -659,6 +717,16 @@ function matchAny(text, params, partSchemas) {
 
 function matchGeneralStatement(text, params) {
   var partSchemas = [];
+  partSchemas.push( new PartSchema([matchOpenBracket, matchGeneralStatement, matchCloseBracket], 
+                                    blockCodeGenerator.BRACKET_STATEMENT, /}$/, 2) );
+  //partSchemas.push( new PartSchema([matchOpenBracket, matchGeneralStatement, matchCloseBracket], 
+  //                                  blockCodeGenerator.BRACKET_STATEMENT) );
+  //partSchemas.push( new PartSchema([matchGeneralStatement, matchSemicolon, matchGeneralStatement, matchSemicolon, matchGeneralStatement], 
+  //                                  blockCodeGenerator.STATEMENT_BLOCK, /;/, 1) );
+  //partSchemas.push( new PartSchema([matchGeneralStatement, matchSemicolon, matchGeneralStatement], 
+  //                                  blockCodeGenerator.STATEMENT_BLOCK, /;(.+)/, 1) );
+  partSchemas.push( new PartSchema([matchGeneralStatement, matchSemicolon, matchGeneralStatement], 
+                                    blockCodeGenerator.STATEMENT_BLOCK, /;(.+)/, 1) );
   partSchemas.push( new PartSchema([matchVariablesSet, matchVariable, matchTo, matchGeneralExpression], 
   	                                blockCodeGenerator.VARIABLES_SET) );
   partSchemas.push( new PartSchema([matchIncrease, matchVariable, matchBy, matchGeneralExpression],
@@ -708,6 +776,12 @@ function processText() {
   params.forEach(function(blockAttributes) {
     XMLCode += "</next></block>";
   });
+
+  // HACK
+  for(var i = 0; i < addedClosings; i++)
+    XMLCode += "</next></block>";
+
+  addedClosings = 0;
 
   console.log(XMLCode);
 
