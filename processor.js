@@ -14,6 +14,8 @@ function Part(processFunc, args) {
   this.args = args;
 }
 
+/*
+
 function generateControlsForBlock(blockAttributes, varIndex, fromIndex, toIndex, doIndex, byIndex) {
   var XMLCode = "";
   var variableName = blockAttributes[1][varIndex] ? blockAttributes[1][varIndex] : "i";
@@ -206,14 +208,14 @@ function generateLogicBoolean(blockAttributes) {
   XMLCode += "<block type = \"logic_boolean\">";
   //XMLCode += "</block>";
   if(blockAttributes[1][0]) {
-    /* Quick fix - change later */
+    // Quick fix - change later
     if(blockAttributes[1][0] == "no") {
       blockAttributes[1][0] = "false";
     } 
     else if(blockAttributes[1][0] == "yes") {
       blockAttributes[1][0] = "true";
     }
-    /* end fix */
+    // end fix
     XMLCode += "<field name = \"BOOL\">" + blockAttributes[1][0] + "</field>";
   }
   XMLCode += "</block>";
@@ -318,32 +320,35 @@ function generateBracketStatement(blockAttributes) {
   //alert("Got");
   return generateCodeForStatement(blockAttributes[1][1]);
 }
+*/
+
+var block_generators = require("block_generators");
 
 var blockCodeGenerator = Object.freeze({
-  CONTROLS_FOR              : generateControlsForBlock,
-  CONTROLS_FOR_LESS_THAN    : generateControlsForBlockLessThan,
-  CONTROLS_FOR_FROM_TO      : generateControlsForBlockFromTo,
-  CONTROLS_WHILE            : generateControlsWhile,
-  CONTROLS_UNTIL            : generateControlsUntil,
-  CONTROLS_IF               : generateControlsIfBlock,
-  VARIABLES_SET             : generateVariablesSet,
-  VARIABLES_INCREASE        : generateVariablesIncrease,
-  VARIABLES_DECREASE        : generateVariablesDecrease,
-  VARIABLES_GET             : generateVariablesGet,
-  MATH_NUMBER               : generateMathNumber,
-  LOGIC_BOOLEAN             : generateLogicBoolean,
-  LOGIC_OPERATION_OR        : generateLogicOperationOr,
-  LOGIC_OPERATION_AND       : generateLogicOperationAnd,
-  LOGIC_COMPARE_LT          : generateLogicCompareLT,
-  LOGIC_COMPARE_GT          : generateLogicCompareGT,
-  LOGIC_COMPARE_EQ          : generateLogicCompareEQ,
-  MATH_ARITHMETIC_ADD       : generateMathArithmeticAdd,
-  MATH_ARITHMETIC_MINUS     : generateMathArithmeticMinus,
-  MATH_ARITHMETIC_MULTIPLY  : generateMathArithmeticMultiply,
-  MATH_ARITHMETIC_DIVIDE    : generateMathArithmeticDivide,
-  MATH_ARITHMETIC_POWER     : generateMathArithmeticPower,
-  STATEMENT_BLOCK           : generateStatementBlock,
-  BRACKET_STATEMENT         : generateBracketStatement
+  CONTROLS_FOR              : block_generators.generateControlsForBlock,
+  CONTROLS_FOR_LESS_THAN    : block_generators.generateControlsForBlockLessThan,
+  CONTROLS_FOR_FROM_TO      : block_generators.generateControlsForBlockFromTo,
+  CONTROLS_WHILE            : block_generators.generateControlsWhile,
+  CONTROLS_UNTIL            : block_generators.generateControlsUntil,
+  CONTROLS_IF               : block_generators.generateControlsIfBlock,
+  VARIABLES_SET             : block_generators.generateVariablesSet,
+  VARIABLES_INCREASE        : block_generators.generateVariablesIncrease,
+  VARIABLES_DECREASE        : block_generators.generateVariablesDecrease,
+  VARIABLES_GET             : block_generators.generateVariablesGet,
+  MATH_NUMBER               : block_generators.generateMathNumber,
+  LOGIC_BOOLEAN             : block_generators.generateLogicBoolean,
+  LOGIC_OPERATION_OR        : block_generators.generateLogicOperationOr,
+  LOGIC_OPERATION_AND       : block_generators.generateLogicOperationAnd,
+  LOGIC_COMPARE_LT          : block_generators.generateLogicCompareLT,
+  LOGIC_COMPARE_GT          : block_generators.generateLogicCompareGT,
+  LOGIC_COMPARE_EQ          : block_generators.generateLogicCompareEQ,
+  MATH_ARITHMETIC_ADD       : block_generators.generateMathArithmeticAdd,
+  MATH_ARITHMETIC_MINUS     : block_generators.generateMathArithmeticMinus,
+  MATH_ARITHMETIC_MULTIPLY  : block_generators.generateMathArithmeticMultiply,
+  MATH_ARITHMETIC_DIVIDE    : block_generators.generateMathArithmeticDivide,
+  MATH_ARITHMETIC_POWER     : block_generators.generateMathArithmeticPower,
+  STATEMENT_BLOCK           : block_generators.generateStatementBlock,
+  BRACKET_STATEMENT         : block_generators.generateBracketStatement
 });
 
 function PartSchema(parts, blockCodeGenerator, splitFirst, splitPartIndex, joinStr) {
@@ -806,10 +811,10 @@ function processText() {
   });
 
   // HACK
-  for(var i = 0; i < addedClosings; i++)
+  for(var i = 0; i < block_generators.addedClosings; i++)
     XMLCode += "</next></block>";
 
-  addedClosings = 0;
+  block_generators.addedClosings = 0;
 
   console.log(XMLCode);
 
