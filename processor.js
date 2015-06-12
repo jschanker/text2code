@@ -315,7 +315,7 @@ function generateStatementBlock(blockAttributes) {
 }
 
 function generateBracketStatement(blockAttributes) {
-  alert("Got");
+  //alert("Got");
   return generateCodeForStatement(blockAttributes[1][1]);
 }
 
@@ -346,11 +346,12 @@ var blockCodeGenerator = Object.freeze({
   BRACKET_STATEMENT         : generateBracketStatement
 });
 
-function PartSchema(parts, blockCodeGenerator, splitFirst, splitPartIndex) {
+function PartSchema(parts, blockCodeGenerator, splitFirst, splitPartIndex, joinStr) {
   this.parts = parts;
   this.blockCodeGenerator = blockCodeGenerator;
   this.splitFirst = splitFirst; // HACK : Fix later
   this.splitPartIndex = splitPartIndex;
+  this.joinStr = joinStr; // HACK : Fix later
 }
 
 function matchAndRemove(text, arr, params) {
@@ -649,15 +650,32 @@ function matchAny(text, params, partSchemas, matchEntire) {
 
     if(partSchemas[i].splitFirst) {
       var textRemainingArr = text.split(RegExp(partSchemas[i].splitFirst));
+      var joinStr = partSchemas[i].joinStr || "";
       //console.log("Text: " + textRemainingArr[0] + " : " + textRemainingArr[1] + " : " + textRemainingArr[2] + " # " + partSchemas[i].splitFirst + "/" + textRemainingArr.length);
       if(textRemainingArr.length > 1) {
-        for(var k = 0; k < 1; k++) {
+        for(var k = 0; k < textRemainingArr.length-1; k++) {
+
+          statementParams = [];
+          partSchemas[i].parts.forEach(function(){
+            statementParams.push([]);
+          });
+          j = 0;
+
+
           textRemaining = textRemainingArr[0];
-          for(var m = 1; m <= k; m++) {
-            textRemaining += textRemainingArr[m];
+          if(textRemaining === undefined) {
+            textRemaining = null;
+            break;
           }
-          //if(!hasMatchingBraces(textRemaining))
-          //  break; // ANOTHER HACK
+          for(var m = 1; m <= k; m++) {
+            if(textRemainingArr[m] !== undefined && textRemainingArr[m] !== null)
+              textRemaining += joinStr + textRemainingArr[m];
+            else {
+              textRemaining = null;
+              break;
+            }
+          }
+
           //console.log("TR:" + textRemaining);
           while(textRemaining !== null && j < partSchemas[i].splitPartIndex) {
             textRemaining = textRemaining.trim().toLowerCase();
@@ -666,11 +684,20 @@ function matchAny(text, params, partSchemas, matchEntire) {
             j++;
           }
           //console.log("Text1: ", textRemaining);
-          if(textRemaining !== null) {
+          if(textRemaining !== null && textRemaining !== undefined && textRemaining.trim() === "") {
             j += 1;
             textRemaining = textRemainingArr[k+1];
+            if(textRemaining === undefined) {
+              textRemaining = null;
+              break;
+            }
             for(m = k+2; m < textRemainingArr.length; m++) {
-              textRemaining += textRemainingArr[m];
+              if(textRemainingArr[m] !== undefined && textRemainingArr[m] !== null)
+                textRemaining += joinStr + textRemainingArr[m];
+              else {
+                textRemaining = null;
+                break;
+              }
             }
             //console.log("Text2: ", textRemaining);
             while(textRemaining !== null && j < partSchemas[i].parts.length) {
@@ -679,7 +706,7 @@ function matchAny(text, params, partSchemas, matchEntire) {
               j++;
             }
             //console.log("Text3: ", textRemaining);
-            if(textRemaining !== null)
+            if(textRemaining !== null)// && hasMatchingBraces(textRemaining))
               break;
           }
         } 
@@ -692,13 +719,14 @@ function matchAny(text, params, partSchemas, matchEntire) {
 
     else {
   	  while(textRemaining !== null && j < partSchemas[i].parts.length) {
+        //console.log(textRemaining.trim() + " " + j);
   	    textRemaining = textRemaining.trim().toLowerCase();
   	    textRemaining = partSchemas[i].parts[j](textRemaining, statementParams[j]);
   	    j++;
   	  }
     }
 
-    foundMatchingSchema = (textRemaining !== null && (!matchEntire || textRemaining.trim() === ""));
+    foundMatchingSchema = (textRemaining !== null && (!matchEntire || textRemaining.trim() === ""));// && hasMatchingBraces(textRemaining));
     //foundMatchingSchema = (textRemaining !== null && textRemaining.trim() === "");
   	//foundMatchingSchema = (textRemaining !== null);
   	i++;
@@ -726,7 +754,7 @@ function matchGeneralStatement(text, params) {
   //partSchemas.push( new PartSchema([matchGeneralStatement, matchSemicolon, matchGeneralStatement], 
   //                                  blockCodeGenerator.STATEMENT_BLOCK, /;(.+)/, 1) );
   partSchemas.push( new PartSchema([matchGeneralStatement, matchSemicolon, matchGeneralStatement], 
-                                    blockCodeGenerator.STATEMENT_BLOCK, /;(.+)/, 1) );
+                                    blockCodeGenerator.STATEMENT_BLOCK, /;/, 1, ";") );
   partSchemas.push( new PartSchema([matchVariablesSet, matchVariable, matchTo, matchGeneralExpression], 
   	                                blockCodeGenerator.VARIABLES_SET) );
   partSchemas.push( new PartSchema([matchIncrease, matchVariable, matchBy, matchGeneralExpression],
@@ -750,7 +778,7 @@ function matchGeneralStatement(text, params) {
   partSchemas.push( new PartSchema([matchControlsIf, matchGeneralExpression, matchThen, matchGeneralStatement],
                                     blockCodeGenerator.CONTROLS_IF, /then(.+)/i, 2) );
 
-  return matchAny(text, params, partSchemas);
+  return matchAny(text, params, partSchemas, true);
 }
 
 function generateCodeForStatement(blockAttributes) {
