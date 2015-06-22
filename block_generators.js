@@ -1,309 +1,233 @@
 "use strict";
 
 (function(namespace) {
-	namespace.exports.generateControlsForBlock = function(blockAttributes, varIndex, fromIndex, toIndex, doIndex, byIndex) {
-	  var XMLCode = "";
-	  var variableName = blockAttributes[1][varIndex] ? blockAttributes[1][varIndex] : "i";
-	  var fromValue = blockAttributes[1][fromIndex] ? generateCodeForStatement(blockAttributes[1][fromIndex]) : 
-	                  "<block type = \"math_number\"><field name = \"NUM\">0</field></block>";
-	  var toValue = blockAttributes[1][toIndex] ? generateCodeForStatement(blockAttributes[1][toIndex]) : 
-	                  "<block type = \"math_number\"><field name = \"NUM\">1</field></block>";
-	  var byValue = blockAttributes[1][byIndex] ? generateCodeForStatement(blockAttributes[1][byIndex]) : 
-	                  "<block type = \"math_number\"><field name = \"NUM\">1</field></block>";
-	  var statementAttr = blockAttributes[1][doIndex] ? generateCodeForStatement(blockAttributes[1][doIndex]) : "";
+    var numberOfUnclosedStatements = 0;
 
-	  XMLCode += "<block type = \"controls_for\">";
-	  //console.log(blockAttributes[1][0] + "\n" + blockAttributes[1][1] + "\n" + blockAttributes[1][2] + "\n" + blockAttributes[1][3][0]);
-	  XMLCode += "<field name = \"VAR\">" + variableName + "</field>";
-	  XMLCode += "<value name = \"FROM\">" + fromValue + "</value>";
-	  XMLCode += "<value name = \"TO\">" + toValue + "</value>";
-	  XMLCode += "<value name = \"BY\">" + byValue + "</value>";
-	  //XMLCode += "<statement></statement>";
-	  XMLCode += "<statement name = \"DO\">" + statementAttr + "</next></block></statement>";
-	  //XMLCode += "</block>";
-	  XMLCode += "<next>";
-	  return XMLCode;
-	};
+    var generateAttributeElement = function(type, name, value) {
+        return "<" + type + " name = \"" + name + "\">" + value + "</" + type + ">"; 
+    };
 
-	namespace.exports.generateControlsForBlockLessThan = function(blockAttributes) {
-	  return namespace.exports.generateControlsForBlock(blockAttributes, 1, undefined, 3, 5);
-	};
+    namespace.exports.generateVariablesSet = function(variableName, valueBlock) {
+        var XMLCode = "";
+        XMLCode += "<block type = \"variables_set\">";
+        XMLCode += generateAttributeElement("field", "VAR", variableName);
+        XMLCode += generateAttributeElement("value", "VALUE", valueBlock);
+        XMLCode += "<next>";
+        numberOfUnclosedStatements++;
+	  
+        return XMLCode;
+    };
 
-	namespace.exports.generateControlsForBlockFromTo = function(blockAttributes) {
-	  return namespace.exports.generateControlsForBlock(blockAttributes, 1, 3, 5, 7);
-	};
+    namespace.exports.generateVariablesGet = function(variableName) {
+        var XMLCode = "";
+        XMLCode += "<block type = \"variables_get\">";
+        XMLCode += generateAttributeElement("field", "VAR", variableName);
+        XMLCode += "</block>";
+        return XMLCode;
+    };
 
-	namespace.exports.generateControlsWhileUntil = function(blockAttributes, testIndex, doIndex, isUntil) {
-	  var XMLCode = "";
-	  var mode = isUntil ? "UNTIL" : "WHILE";
-	  var testValue = blockAttributes[1][testIndex] ? generateCodeForStatement(blockAttributes[1][testIndex]) : 
-	                  "<block type = \"logic_boolean\"><field name = \"BOOL\">false</field></block>";
-	  var statementAttr = blockAttributes[1][doIndex] ? generateCodeForStatement(blockAttributes[1][doIndex]) : "";
+    namespace.exports.generateLogicBoolean = function(isTrue) {
+        var XMLCode = "";
+        var truthValue = isTrue ? "true" : "false"; 
 
-	  XMLCode += "<block type = \"controls_whileUntil\">";
-	  XMLCode += "<field name = \"MODE\">" + mode + "</field>";
-	  //console.log(blockAttributes[1][0] + "\n" + blockAttributes[1][1] + "\n" + blockAttributes[1][2] + "\n" + blockAttributes[1][3][0]);
-	  XMLCode += "<value name = \"BOOL\">" + testValue + "</value>";
-	  //XMLCode += "<statement></statement>";
-	  XMLCode += "<statement name = \"DO\">" + statementAttr + "</next></block></statement>";
-	  //XMLCode += "</block>";
-	  XMLCode += "<next>";
-	  return XMLCode;
-	};
+        XMLCode += "<block type = \"logic_boolean\">";
+        XMLCode += generateAttributeElement("field", "BOOL", truthValue);
+        XMLCode += "</block>";
 
-	namespace.exports.generateControlsWhile = function(blockAttributes) {
-	  return namespace.exports.generateControlsWhileUntil(blockAttributes, 1, 3);
-	};
+        return XMLCode;
+    };
 
-	namespace.exports.generateControlsUntil = function(blockAttributes) {
-	  return namespace.exports.generateControlsWhileUntil(blockAttributes, 1, 3, true);
-	}
+    namespace.exports.generateLogicBooleanTrue = function() {
+        return namespace.exports.generateLogicBoolean(true);
+    };
 
-	namespace.exports.generateControlsIfBlock = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"controls_if\">";
-	  if(blockAttributes[1][1]) {
-	    XMLCode += "<value name = \"IF0\">" + generateCodeForStatement(blockAttributes[1][1]) + "</value>";
-	  }
-	  if(blockAttributes[1][3]) {
-	    XMLCode += "<statement name = \"DO0\">" + generateCodeForStatement(blockAttributes[1][3]) + "</next></block></statement>";
-	  }
-	  XMLCode += "<next>";
-	  //XMLCode += "</block>";
-	  return XMLCode;
-	}
+    namespace.exports.generateLogicBooleanFalse = function() {
+        return namespace.exports.generateLogicBoolean();
+    };
 
-	namespace.exports.generateVariablesGet = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"variables_get\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<field name = \"VAR\">" + blockAttributes[1][0] + "</field>";
-	  }
-	  //XMLCode += "<value name = \"VALUE\">" + generateCodeForStatement(blockAttributes[1][3]) + "</value>";
-	  XMLCode += "<next>";
-	  return XMLCode;
-	}
+    namespace.exports.generateMathNumber = function(num) {
+        var XMLCode = "";
+        var num = (num !== undefined ? num : 0);
 
-	namespace.exports.generateVariablesSet = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"variables_set\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][1]) {
-	    XMLCode += "<field name = \"VAR\">" + blockAttributes[1][1] + "</field>";
-	  }
-	  XMLCode += "<value name = \"VALUE\">" + generateCodeForStatement(blockAttributes[1][3]) + "</value>";
-	  XMLCode += "<next>";
-	  return XMLCode;
-	}
+        XMLCode += "<block type = \"math_number\">";
+        XMLCode += generateAttributeElement("field", "NUM", num);
+        XMLCode += "</block>";
 
-	namespace.exports.generateMathNumber = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"math_number\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<field name = \"NUM\">" + blockAttributes[1][0] + "</field>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+        return XMLCode;
+    };
 
-	namespace.exports.generateMathArithmetic = function(blockAttributes, OP) {
-	  var XMLCode = "";
-	  //console.log(blockAttributes);
-	  XMLCode += "<block type = \"math_arithmetic\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+    var generateMathNumber = namespace.exports.generateMathNumber;
 
-	  XMLCode += "<field name = \"OP\">" + OP + "</field>"; 
+    namespace.exports.generateMathArithmetic = function(valueBlockA, valueBlockB, OP) {
+        var XMLCode = "";
+        XMLCode += "<block type = \"math_arithmetic\">";
+        XMLCode += generateAttributeElement("value", "A", valueBlockA);
+        XMLCode += generateAttributeElement("field", "OP", OP);
+        XMLCode += generateAttributeElement("value", "B", valueBlockB);
+        XMLCode += "</block>";
+        return XMLCode;
+    };
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+    namespace.exports.generateMathArithmeticAdd = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathArithmetic(valueBlockA, valueBlockB, "ADD");
+    };
 
-	namespace.exports.generateMathArithmeticAdd = function(blockAttributes) {
-	  return namespace.exports.generateMathArithmetic(blockAttributes, "ADD");
-	}
+    namespace.exports.generateMathArithmeticMinus = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathArithmetic(valueBlockA, valueBlockB, "MINUS");
+    };
 
-	namespace.exports.generateMathArithmeticMinus = function(blockAttributes) {
-	  return namespace.exports.generateMathArithmetic(blockAttributes, "MINUS");
-	}
+    namespace.exports.generateMathArithmeticMultiply = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathArithmetic(valueBlockA, valueBlockB, "MULTIPLY");
+    };
 
-	namespace.exports.generateMathArithmeticMultiply = function(blockAttributes) {
-	  return namespace.exports.generateMathArithmetic(blockAttributes, "MULTIPLY");
-	}
+    namespace.exports.generateMathArithmeticDivide = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathArithmetic(valueBlockA, valueBlockB, "DIVIDE");
+    };
 
-	namespace.exports.generateMathArithmeticDivide = function(blockAttributes) {
-	  return namespace.exports.generateMathArithmetic(blockAttributes, "DIVIDE");
-	}
+    namespace.exports.generateMathArithmeticPower = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathArithmetic(valueBlockA, valueBlockB, "POWER");
+    };
 
-	namespace.exports.generateMathArithmeticPower = function(blockAttributes) {
-	  return namespace.exports.generateMathArithmetic(blockAttributes, "POWER");
-	}
+    namespace.exports.generateUpdateVariable = function(variable, valueBlock, OP) {
+        return namespace.exports.generateVariablesSet(variable, 
+               namespace.exports.generateMathArithmetic(namespace.exports.generateVariablesGet(variable), 
+               	valueBlock, OP));
+    };
 
-	// REFACTOR FUNCTION : USE generateVariablesGet, generateVariablesSet and generateMathArithmeticAdd
+    namespace.exports.generateVariablesIncrease = function(variableName, valueBlock) {
+        return namespace.exports.generateUpdateVariable(variableName, valueBlock, "ADD");
+    };
 
-	namespace.exports.generateVariablesUpdateVariable = function(blockAttributes, OP) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"variables_set\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][1]) {
-	    XMLCode += "<field name = \"VAR\">" + blockAttributes[1][1] + "</field>";
-	  }
-	  XMLCode += "<value name = \"VALUE\">";
+	namespace.exports.generateVariablesDecrease = function(variableName, valueBlock) {
+        return namespace.exports.generateUpdateVariable(variableName, valueBlock, "MINUS");
+    };
 
+    namespace.exports.generateControlsForBlock = function(variableName, fromBlock, toBlock, doBlock, byBlock) {
+        var XMLCode = "";
 
-	  XMLCode += "<block type = \"math_arithmetic\">";
+        XMLCode += "<block type = \"controls_for\">";
+        variableName = variableName ? variableName : "i";
+        fromBlock = fromBlock ? fromBlock : generateMathNumber(0); 
+        toBlock = toBlock ? toBlock : generateMathNumber(1); 
+        doBlock = doBlock ? doBlock : "";
+        byBlock = byBlock ? byBlock : generateMathNumber(1);
 
-	  if(blockAttributes[1][1]) {
-	    XMLCode += "<value name = \"A\"><block type = \"variables_get\"><field name = \"VAR\">" + 
-	               blockAttributes[1][1] + "</field></block></value>";
-	  }
+        XMLCode += generateAttributeElement("field", "VAR", variableName);
+        XMLCode += generateAttributeElement("value", "FROM", fromBlock);
+        XMLCode += generateAttributeElement("value", "TO", toBlock);
+        XMLCode += generateAttributeElement("value", "BY", byBlock);
+        XMLCode += "<statement name = \"DO\">" + doBlock + "</next></block></statement>";
+        XMLCode += "<next>";
 
-	  XMLCode += "<field name = \"OP\">" + OP + "</field>"; 
+        numberOfUnclosedStatements++;
 
-	  if(blockAttributes[1][3]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][3]) + "</value>";
-	  }
-	  XMLCode += "</block>";
+        return XMLCode;
+    };
 
+    namespace.exports.closeAllStatements = function() {
+        var XMLCode = "";
 
-	  XMLCode += "</value>";
+        for(var i = 0; i < numberOfUnclosedStatements; i++) {
+            XMLCode += "</next></block>";
+        }
 
-	  XMLCode += "<next>";
+        numberOfUnclosedStatements = 0;
 
-	  return XMLCode;
-	}
+        return XMLCode;
+    };
 
-	namespace.exports.generateVariablesIncrease = function(blockAttributes) {
-	  return namespace.exports.generateVariablesUpdateVariable(blockAttributes, "ADD");
-	}
+    namespace.exports.generateControlsForBlockLessThan = function(variableName, toBlock, doBlock) {
+        return namespace.exports.generateControlsForBlock(variableName, namespace.exports.generateMathNumber(0), 
+                                                          toBlock, doBlock);
+    };
 
-	namespace.exports.generateVariablesDecrease = function(blockAttributes) {
-	  return namespace.exports.generateVariablesUpdateVariable(blockAttributes, "MINUS");
-	}
+    namespace.exports.generateControlsWhileUntil = function(testBlock, doBlock, isUntil) {
+        var XMLCode = "";
+        var mode = isUntil ? "UNTIL" : "WHILE";
+        testBlock = testBlock || namespace.exports.generateLogicBooleanFalse();
+        doBlock = (doBlock !== undefined ? doBlock : "");
 
-	namespace.exports.generateLogicBoolean = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"logic_boolean\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    /* Quick fix - change later */
-	    if(blockAttributes[1][0] == "no") {
-	      blockAttributes[1][0] = "false";
-	    } 
-	    else if(blockAttributes[1][0] == "yes") {
-	      blockAttributes[1][0] = "true";
-	    }
-	    /* end fix */
-	    XMLCode += "<field name = \"BOOL\">" + blockAttributes[1][0] + "</field>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+        XMLCode += "<block type = \"controls_whileUntil\">";
+        XMLCode += generateAttributeElement("field", "MODE", mode);
+        XMLCode += generateAttributeElement("value", "BOOL", testBlock);
+        XMLCode += "<statement name = \"DO\">" + doBlock + "</next></block></statement>";
+        XMLCode += "<next>";
+        numberOfUnclosedStatements++;
 
-	namespace.exports.generateLogicOperationOr = function(blockAttributes) {
-	  var XMLCode = "";
-	  console.log(blockAttributes);
-	  XMLCode += "<block type = \"logic_operation\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+        return XMLCode;
+    };
 
-	  XMLCode += "<field name = \"OP\">OR</field>"; 
+    namespace.exports.generateControlsWhile = function(testBlock, doBlock) {
+        return namespace.exports.generateControlsWhileUntil(testBlock, doBlock);
+    };
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+    namespace.exports.generateControlsUntil = function(testBlock, doBlock) {
+        return namespace.exports.generateControlsWhileUntil(testBlock, doBlock, true);
+    };
 
-	namespace.exports.generateLogicOperationAnd = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"logic_operation\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+    namespace.exports.generateControlsIf = function(testBlock, doBlock) {
+        var XMLCode = "";
 
-	  XMLCode += "<field name = \"OP\">AND</field>"; 
+        testBlock = testBlock || namespace.exports.generateLogicBooleanTrue();
+        doBlock = (doBlock !== undefined ? doBlock : "");
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+        XMLCode += "<block type = \"controls_if\">";
+        XMLCode += generateAttributeElement("value", "IF0", testBlock);
+        XMLCode += "<statement name = \"DO0\">" + doBlock + "</next></block></statement>";
+        XMLCode += "<next>";
+	    numberOfUnclosedStatements++;
 
-	namespace.exports.generateLogicCompareLT = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"logic_compare\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+        return XMLCode;
+    };
 
-	  XMLCode += "<field name = \"OP\">LT</field>"; 
+    namespace.exports.generateLogicOperation = function(valueBlockA, valueBlockB, isOr) {
+        var XMLCode = "";
+        var OP = isOr ? "OR" : "AND";
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+        XMLCode += "<block type = \"logic_operation\">";
+        XMLCode += generateAttributeElement("value", "A", valueBlockA);
+        XMLCode += generateAttributeElement("field", "OP", OP);
+        XMLCode += generateAttributeElement("value", "B", valueBlockB);
+        XMLCode += "</block>";
 
-	namespace.exports.generateLogicCompareGT = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"logic_compare\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+        return XMLCode;
+    };
 
-	  XMLCode += "<field name = \"OP\">GT</field>"; 
+    namespace.exports.generateLogicOperationOr = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateLogicOperation(valueBlockA, valueBlockB, true);
+    };
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+    namespace.exports.generateLogicOperationAnd = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateLogicOperation(valueBlockA, valueBlockB);
+    };
 
-	namespace.exports.generateLogicCompareEQ = function(blockAttributes) {
-	  var XMLCode = "";
-	  XMLCode += "<block type = \"logic_compare\">";
-	  //XMLCode += "</block>";
-	  if(blockAttributes[1][0]) {
-	    XMLCode += "<value name = \"A\">" + generateCodeForStatement(blockAttributes[1][0]) + "</value>";
-	  }
+    namespace.exports.generateLogicCompare = function(valueBlockA, valueBlockB, OP) {
+        var XMLCode = "";
 
-	  XMLCode += "<field name = \"OP\">EQ</field>"; 
+        XMLCode += "<block type = \"logic_compare\">";
+        XMLCode += generateAttributeElement("value", "A", valueBlockA);
+        XMLCode += generateAttributeElement("field", "OP", OP);
+        XMLCode += generateAttributeElement("value", "B", valueBlockB);
+        XMLCode += "</block>";
 
-	  if(blockAttributes[1][2]) {
-	    XMLCode += "<value name = \"B\">" + generateCodeForStatement(blockAttributes[1][2]) + "</value>";
-	  }
-	  XMLCode += "</block>";
-	  return XMLCode;
-	}
+        return XMLCode;
+    };
 
-	namespace.exports.addedClosings = 0; // HACK
+    namespace.exports.generateLogicCompareLT = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateLogicCompare(valueBlockA, valueBlockB, "LT");
+    };
 
-	namespace.exports.generateStatementBlock = function(blockAttributes) {
-	  namespace.exports.addedClosings++;
-	  return generateCodeForStatement(blockAttributes[1][0]) + 
-	         generateCodeForStatement(blockAttributes[1][2]);
-	}
+    namespace.exports.generateLogicCompareGT = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateLogicCompare(valueBlockA, valueBlockB, "GT");
+    };
 
-	namespace.exports.generateBracketStatement = function(blockAttributes) {
-	  //alert("Got");
-	  return generateCodeForStatement(blockAttributes[1][1]);
-	}
+    namespace.exports.generateLogicCompareEQ = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateLogicCompare(valueBlockA, valueBlockB, "EQ");
+    };
+
+    namespace.exports.generateStatementBlock = function(statementBlockA, statementBlockB) {
+    	numberOfUnclosedStatements++;
+        return statementBlockA + statementBlockB;
+    };
 
 })(provide("block_generators"));
