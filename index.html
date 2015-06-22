@@ -43,12 +43,13 @@
        <h3><em>If you can describe the solution, you can code it. (At least that's the goal.)</em></h3>
       </footer>
       <script src = "modules.js"></script>
+      <script src = "parser.js"></script>
       <script src = "block_generators.js"></script>
-      <script src = "processor.js"></script>
+      <script src = "controller.js"></script>
       <script>
         "use strict";
-        document.getElementById("convertBtn").addEventListener('click', processText);
-        //Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: document.getElementById('toolbox')});
+        var controller = require("controller");
+        document.getElementById("convertBtn").addEventListener('click', controller.processText);
         Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: undefined,scrollbars:true});
         Blockly.Xml.domToWorkspace(Blockly.mainWorkspace, document.getElementById('startBlocks'));
       </script>
