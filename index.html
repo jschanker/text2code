@@ -22,7 +22,7 @@
   	  	<div class = "tableRow">
   	  	  <div class = "tableCell" id = "pseudocodeCell">
   	        <h2><label for = "pseudocode">Text</label>:</h2>
-  	        <textarea id = "pseudocode">set power to 0.  while num is less than 2 to the exponent, increase exponent by 1. set counter to 0.  go through every number less than 100, if 50 = number times number minus number + 7 then increase counter by 1. if counter > 0 and counter < 2, set foundUniqueSolution to True.  set pointlessboolean to 5 < 7 and counter > 4 or 2 < 8.  Go through every num less than 5, if num < 10 and 2 is greater than 5 or 7 is equal to 5 then set a to true or false.  Set b to num plus 5.  Increase __var__42 by 50.</textarea>
+  	        <textarea id = "pseudocode">Set power to 0.  while num is less than 2 to the exponent, increase exponent by 1. Set counter to 0.  Go through every number less than 100, if 50 = number times number minus number + 7 then increase counter by 1. if counter > 0 and counter < 2, set foundUniqueSolution to True.  set pointlessboolean to 5 < 7 and counter > 4 or 2 < 8.  Go through every num less than 5, {set x to 3; if num < 10 and 2 is greater than 5 or 7 is equal to 5 then {set a to true or false; set b to num plus 5}; set y to 7}.  Increase __var__42 by 50.</textarea>
   	      </div>
   	      <div class = "tableCell" id = "convertCell">
   	        <button id = "convertBtn" type = "button">Convert =></button>
@@ -42,11 +42,14 @@
       <footer>
        <h3><em>If you can describe the solution, you can code it. (At least that's the goal.)</em></h3>
       </footer>
-      <script src = "processor.js"></script>
+      <script src = "modules.js"></script>
+      <script src = "parser.js"></script>
+      <script src = "block_generators.js"></script>
+      <script src = "controller.js"></script>
       <script>
         "use strict";
-        document.getElementById("convertBtn").addEventListener('click', processText);
-        //Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: document.getElementById('toolbox')});
+        var controller = require("controller");
+        document.getElementById("convertBtn").addEventListener('click', controller.processText);
         Blockly.inject(document.getElementById('blocklyDiv'),{toolbox: undefined,scrollbars:true});
         Blockly.Xml.domToWorkspace(Blockly.mainWorkspace, document.getElementById('startBlocks'));
       </script>
