@@ -2,41 +2,68 @@
 
 (function(namespace) {
     var parser = require("parser");
-    var blockGenerators = require("block_generators");
+    var bg = require("block_generators");
 
     var blockGeneratorArgs = {
-        expressionVariable      : ["generateVariablesGet", [1]],
-        expressionInteger       : ["generateMathNumber", [1]],
-        expressionTrue          : ["generateLogicBooleanTrue", []],
-        expressionFalse         : ["generateLogicBooleanFalse", []],
-        expressionSum           : ["generateMathArithmeticAdd", [1, 3]],
-        expressionDifference    : ["generateMathArithmeticMinus", [1, 3]],
-        expressionProduct       : ["generateMathArithmeticMultiply", [1, 3]],
-        expressionDivide        : ["generateMathArithmeticDivide", [1, 3]],
-        expressionPower         : ["generateMathArithmeticPower", [1, 3]],
-        expressionLessThan      : ["generateLogicCompareLT", [1, 3]],
-        expressionGreaterThan   : ["generateLogicCompareGT", [1, 3]],
-        expressionEquals        : ["generateLogicCompareEQ", [1, 3]],
-        expressionOr            : ["generateLogicOperationOr", [1, 3]],
-        expressionAnd           : ["generateLogicOperationAnd", [1, 3]],
-        expressionGenNumerical  : ["", [1]],
-        expressionGenLogical    : ["", [1]],
+        expressionVariable      : [bg.generateVariablesGet, [1]],
+        expressionInteger       : [bg.generateMathNumber, [1]],
+        expressionTrue          : [bg.generateLogicBooleanTrue, []],
+        expressionFalse         : [bg.generateLogicBooleanFalse, []],
+        expressionText          : [bg.generateText, [2]],
+        expressionSum           : [bg.generateMathArithmeticAdd, [1, 3]],
+        expressionDifference    : [bg.generateMathArithmeticMinus, [1, 3]],
+        expressionProduct       : [bg.generateMathArithmeticMultiply, [1, 3]],
+        expressionDivide        : [bg.generateMathArithmeticDivide, [1, 3]],
+        expressionPower         : [bg.generateMathArithmeticPower, [1, 3]],
+        expressionModulo        : [bg.generateMathModulo, [1, 3]],
+        expressionRemainderOf   : [bg.generateMathModulo, [2, 4]],
+        expressionLessThan      : [bg.generateLogicCompareLT, [1, 3]],
+        expressionLessThanEq    : [bg.generateLogicCompareLTE, [1, 3]],
+        expressionGreaterThan   : [bg.generateLogicCompareGT, [1, 3]],
+        expressionGreaterThanEq : [bg.generateLogicCompareGTE, [1, 3]],
+        expressionEquals        : [bg.generateLogicCompareEQ, [1, 3]],
+        expressionNotEquals     : [bg.generateLogicCompareNEQ, [1, 3]],
+        expressionDivisibleBy   : [bg.generateMathNumberPropertyDivisible, [1, 3]],
+        expressionFactorOf      : [bg.generateMathNumberPropertyDivisible, [3, 1]],
+        expressionNot           : [bg.generateLogicNegate, [2]],
+        expressionOr            : [bg.generateLogicOperationOr, [1, 3]],
+        expressionAnd           : [bg.generateLogicOperationAnd, [1, 3]],
+        expressionGenNumerical  : [identity, [1]],
+        expressionGenLogical    : [identity, [1]],
+        expressionGenString     : [identity, [1]],
+        expressionLogicalBlock  : [identity, [2]],
+        expressionNumBlock      : [identity, [2]],
 
-        statementBlock          : ["", [2]],
-        statementJoin           : ["generateStatementBlock", [1, 3]],
-        statementAssignment     : ["generateVariablesSet", [2, 4]],
-        statementIncreaseVar    : ["generateVariablesIncrease", [2, 4]],
-        statementDecreaseVar    : ["generateVariablesDecrease", [2, 4]],
-        statementForLessThan    : ["generateControlsForBlockLessThan", [2, 4, 6]],
-        statementForFromTo      : ["generateControlsForBlock", [2, 4, 6, 8]],
-        statementWhile          : ["generateControlsWhile", [2, 4]],
-        statementUntil          : ["generateControlsUntil", [2, 4]],
-        statementIfComma        : ["generateControlsIf", [2, 4]],
-        statementIfThen         : ["generateControlsIf", [2, 4]],
+        statementBlock          : [identity, [2]],
+        statementIfThenAlt      : [bg.generateControlsIf, [2, 4, 6]],
+        statementElseIf         : [statementElseIf, [3, 5]],
+        statementElseIfMore     : [statementElseIfMore, [3, 5, 7]],
+        statementElse           : [statementElse, [2]],
+        statementJoin           : [bg.generateStatementBlock, [1, 3]],
+        statementAssignment     : [bg.generateVariablesSet, [2, 4]],
+        statementIncreaseVar    : [bg.generateVariablesIncrease, [2, 4]],
+        statementDecreaseVar    : [bg.generateVariablesDecrease, [2, 4]],
+        statementForLessThan    : [bg.generateControlsForBlockLessThan, [2, 4, 6]],
+        statementForFromTo      : [bg.generateControlsForBlock, [2, 4, 6, 8]],
+        statementWhile          : [bg.generateControlsWhile, [2, 4]],
+        statementUntil          : [bg.generateControlsUntil, [2, 4]],
+        statementIfThen         : [bg.generateControlsIf, [2, 4]],
     };
 
     function identity(x) {
         return x;
+    }
+
+    function statementElseIfMore(condition, doStatement, conditionArr) {
+        return [condition, doStatement].concat(conditionArr);
+    }
+
+    function statementElseIf(condition, doStatement) {
+        return [condition, doStatement];
+    }
+
+    function statementElse(doStatement) {
+        return [doStatement];
     }
 
     var generateBlocklyCode = function(parsedStatement) {
@@ -48,7 +75,7 @@
 
         if(partsArr) {
             blockGenerator = blockGeneratorArgs[ partsArr[0] ];
-            blockGeneratorFunc = blockGenerator[0] ? blockGenerators[ blockGenerator[0] ] : identity;
+            blockGeneratorFunc = blockGenerator[0];
             blockGeneratorArgIds = blockGenerator[1];
 
             blockGeneratorFuncArgs = blockGeneratorArgIds.map(function(argId) {
@@ -66,7 +93,9 @@
     };
 
     namespace.exports.processText = function() {
-        var parsedTextArr = parser.parseText(document.getElementById("pseudocode").value);
+        var text = document.getElementById("pseudocode").value;
+
+        var parsedTextArr = parser.parseText(text);
         var XMLCode = "";
         var startBlockField = document.getElementById("startBlocks");
 
@@ -74,7 +103,7 @@
             XMLCode += generateBlocklyCode(statement);
         });
 
-        XMLCode += blockGenerators.closeAllStatements();
+        XMLCode += bg.closeAllStatements();
 
         console.log("XML: " + XMLCode);
 
