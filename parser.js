@@ -1,6 +1,7 @@
 "use strict";
 
 (function(namespace) {
+    var memo = {};
     var statementPartSchema = {
         tokens : {
             integer                :  [/-\d+|\d+/],
@@ -140,6 +141,10 @@
 
     namespace.exports.processingOrder = processingOrder;
 
+    var tupleToStr = function(arr) {
+        return arr.join("|");
+    };
+
     var getPartsArr = function(schemaName) {
         var schemaCategory;
 
@@ -262,21 +267,29 @@
         // returns array [schema identifier, args[0], args[1], ..., args[n], textRemaining]
         // or null if no matching schema
 
+        var key = tupleToStr([text, category, matchEntire]);
         var i = 0;
         var result = undefined;
         var schemas = processingOrder[category];
         var schemaArr;
 
-        while(!result && i < schemas.length) {
-            schemaArr = statementPartSchema[category][schemas[i]];
-            result = parseTextOnFirstToken(text, schemaArr, matchEntire);
-            if(result) {
-                result = [schemas[i]].concat(result); // add schema identifier to front of result array
+        if(key in memo) {
+            result = memo[key];
+        } else {
+            while(!result && i < schemas.length) {
+                schemaArr = statementPartSchema[category][schemas[i]];
+                result = parseTextOnFirstToken(text, schemaArr, matchEntire);
+                if(result) {
+                    result = [schemas[i]].concat(result); // add schema identifier to front of result array
+                }
+                i++;
             }
-            i++;
+
+            memo[key] = result;
         }
 
-        return result;
+        return result ? result.slice() : null; // return shallow copy so other functions can change array without
+                                               // affecting memo entries
     };
 
     namespace.exports.parseText = function(text) {
