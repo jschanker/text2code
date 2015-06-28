@@ -55,7 +55,6 @@
         },
 
         expressionLogical : {
-            // add boolean variable?  If so, expressionGeneral needs to be fixed because it should be processed last.
             expressionTrue         :  ["true"],
             expressionFalse        :  ["false"],
             expressionLessThan     :  ["expressionNumerical", "lessThan", "expressionNumerical"],
@@ -69,7 +68,8 @@
             expressionOr           :  ["expressionLogical", "or", "expressionLogical"],
             expressionAnd          :  ["expressionLogical", "and", "expressionLogical"],
             expressionNot          :  ["not", "expressionLogical"],
-            expressionLogicalBlock :  ["openParenthesis", "expressionLogical", "closeParenthesis"]
+            expressionLogicalBlock :  ["openParenthesis", "expressionLogical", "closeParenthesis"],
+            expressionVariable     :  ["variable"]
         },
 
         expressionNumerical : {
@@ -79,14 +79,15 @@
             expressionProduct      :  ["expressionNumerical", "multiply", "expressionNumerical"],
             expressionDivide       :  ["expressionNumerical", "divide", "expressionNumerical"],
             expressionPower        :  ["expressionNumerical", "power", "expressionNumerical"],
-            expressionRemainderOf  :  ["remainderOf", "expressionNumerical", "divide", "expressionNumerical"], // divide
+            expressionRemainderOf  :  ["remainderOf", "expressionNumerical", "divide", "expressionNumerical"],
             expressionModulo       :  ["expressionNumerical", "modulo", "expressionNumerical"],
             expressionVariable     :  ["variable"],
             expressionNumBlock     :  ["openParenthesis", "expressionNumerical", "closeParenthesis"]
         },
 
         expressionString : {
-            expressionText         :  ["quotationMark", "word", "quotationMark"]
+            expressionText         :  ["quotationMark", "word", "quotationMark"],
+            expressionVariable     :  ["variable"]
         },
 
         expressionGeneral : {
@@ -113,7 +114,6 @@
                                        "expressionNumerical", "comma", "statementGeneral"],
             statementWhile         :  ["while", "expressionLogical", "comma", "statementGeneral"],
             statementUntil         :  ["until", "expressionLogical", "comma", "statementGeneral"],
-            //statementIfComma     :  ["if", "expressionLogical", "comma", "statementGeneral"],
             statementIfThen        :  ["if", "expressionLogical", "commaThen", "statementGeneral"],
             statementIfThenAlt     :  ["if", "expressionLogical", "commaThen", "statementGeneral", 
                                        "semicolon", "statementConditional"]
@@ -128,11 +128,11 @@
                                  "expressionNotEquals", "expressionLessThanEq", "expressionGreaterThanEq", 
                                  "expressionLessThan", "expressionGreaterThan", 
                                  "expressionEquals", "expressionDivisibleBy", "expressionFactorOf", 
-                                 "expressionLogicalBlock", "expressionTrue", "expressionFalse"],
-        expressionNumerical   : ["expressionSum", "expressionDifference", 
+                                 "expressionLogicalBlock", "expressionTrue", "expressionFalse", "expressionVariable"],
+        expressionNumerical   : ["expressionNumBlock", "expressionInteger", "expressionVariable", "expressionSum", "expressionDifference", 
                                  "expressionProduct", "expressionDivide", "expressionModulo", "expressionRemainderOf",
-                                 "expressionPower", "expressionVariable", "expressionNumBlock", "expressionInteger"],
-        expressionString      : ["expressionText"],
+                                 "expressionPower"],
+        expressionString      : ["expressionText", "expressionVariable"],
         statementGeneral      : ["statementBlock", "statementJoin", "statementAssignment", "statementIncreaseVar", 
                                  "statementDecreaseVar", "statementForLessThan", "statementForFromTo", "statementWhile", 
                                  "statementUntil", "statementIfThenAlt", "statementIfThen"],
@@ -140,6 +140,12 @@
     };
 
     namespace.exports.processingOrder = processingOrder;
+
+    var funcIds = {
+        parseSchemaFragment         : 0,
+        parseTextOnFirstToken       : 1,
+        parseTextFragmentByCategory : 2
+    };
 
     var tupleToStr = function(arr) {
         return arr.join("|");
@@ -184,52 +190,72 @@
         return null;
     };
 
-    var parseSchemaFragment = function(text, schemaArrFragment, matchEntire) {
-        var i = 0;
-        var parseResultsArr = [];
-        var result;
-        var textRemaining = text.toLowerCase().trim();
-        var tokenName;
+    var memoizedFunc = function(func, argArr, uid) {
+        var key = tupleToStr(argArr.concat(uid));
+        var parseResultsArr;
 
-        while(parseResultsArr !== null && i < schemaArrFragment.length) {
-            if(schemaArrFragment[i] in statementPartSchema.tokens) {
-                result = splitOnFirst(textRemaining, schemaArrFragment[i], true);
-                result = result ? result.slice(1) : null; // token at start so result[0] == ""
-            } else {
-                result = parseTextFragmentByCategory(textRemaining, schemaArrFragment[i]);
-            }
-            if(result !== null) {
-                textRemaining = result[result.length - 1].trim();
-                result.pop(); // remove textRemaining
-                parseResultsArr.push(result);
-            } else {
-                parseResultsArr = null;
-            }
-            i++;
-        }
-
-        if( parseResultsArr !== null && (!matchEntire || textRemaining.trim() === "") ) {
-            parseResultsArr.push(textRemaining);
+        if(key in memo) {
+            parseResultsArr = memo[key];
         } else {
-            parseResultsArr = null;
+            parseResultsArr = func.apply(null, argArr);
+            memo[key] = parseResultsArr;
         }
+
+        return parseResultsArr.map(function(result) {
+                return result.slice();
+        }); // store shallow copies of each array so other functions can change them
+            // without affecting memo entries
+    };
+
+    var parseSchemaFragment = function(text, schemaArrFragment, matchEntire) {
+        // returns all possible schemaArrFragment parsings of a prefix of text;
+        // full text if matchEntire is true
+        // in form [args[0], args[1], ..., args[n], textRemaining]
+
+        var key = tupleToStr([text, schemaArrFragment, matchEntire]);
+        var parseResultsArr = []; // all possible results for schemaArrFragment
+        var result = undefined; 
+        var resultArr = null; // result for schemaArrFragment[1:]
+        var results; // possible results for schemaArrFragment[0]
+        var textRemaining = text.toLowerCase().trim();
+
+        if(schemaArrFragment.length === 0) {
+            return (textRemaining === "" || !matchEntire) ? [[textRemaining]] : [];
+        }
+        else if(schemaArrFragment[0] in statementPartSchema.tokens) {
+            result = splitOnFirst(textRemaining, schemaArrFragment[0], true);
+            results = result ? [result.slice(1)] : []; // token at start so result[0] == ""
+        }
+        else {
+            results = memoizedFunc(parseTextFragmentByCategory, [textRemaining, schemaArrFragment[0], false], 
+                                   funcIds.parseTextFragmentByCategory);
+        }
+
+        results.forEach(function(result) {
+            textRemaining = result[result.length-1].trim();
+            result.pop(); // remove textRemaining
+            resultArr = memoizedFunc(parseSchemaFragment, [textRemaining, schemaArrFragment.slice(1), matchEntire],
+                                     funcIds.parseSchemaFragment);
+            resultArr.forEach(function(suffixResult) {
+                parseResultsArr.push([result].concat(suffixResult));
+            });
+        });
 
         return parseResultsArr;
     };
 
     var parseTextOnFirstToken = function(text, partsArr, matchEntire) {
-        // parse text on token appearing first in partsArr on the first
+        // parse text on token appearing first in partsArr on each
         // occurrence in text that forms an instance of partsArr schema
-        // returns array [args[0], args[1], ..., args[n], textRemaining]
-        // or null if text can't be split on any token to match partsArr schema
+        // returns array of arrays of the form
+        // [args[0], args[1], ..., args[n], textRemaining]
 
         var tokenIndex = getFirstTokenIndex(partsArr);
         var tokenName = tokenIndex >= 0 ? partsArr[tokenIndex] : "NOT_FOUND";
         var textRemaining = text.trim().toLowerCase();
         var textThroughPreviousToken = "";
-        var foundMatchingTokenSplit = false;
         var splitOnTokenArr;
-        var parseResultsArr = null;
+        var parseResultsArr = [];
         var parseResultsArrBeforeToken;
         var parseResultsArrAfterToken;
 
@@ -239,19 +265,22 @@
         } else {
             splitOnTokenArr = splitOnFirst(textRemaining, tokenName);
 
-            while(!foundMatchingTokenSplit && splitOnTokenArr) {
-                parseResultsArr = null;
-                parseResultsArrAfterToken = undefined; // reset 
-                parseResultsArrBeforeToken = parseSchemaFragment( (textThroughPreviousToken + splitOnTokenArr[0]).trim(), 
-    	    	                                                   partsArr.slice(0, tokenIndex), true );
-                if(parseResultsArrBeforeToken) {
-                    parseResultsArrBeforeToken.pop(); // textRemaining === "" since matchEntire is true
-                    parseResultsArrAfterToken = parseSchemaFragment(splitOnTokenArr[2].trim(), partsArr.slice(tokenIndex + 1), matchEntire );
-                }
+            while(splitOnTokenArr) {
+                parseResultsArrBeforeToken = memoizedFunc(parseSchemaFragment, 
+                                                          [ (textThroughPreviousToken + splitOnTokenArr[0]).trim(), 
+                                                           partsArr.slice(0, tokenIndex), true ], funcIds.parseSchemaFragment);
 
-                if(parseResultsArrAfterToken) {
-                    foundMatchingTokenSplit = true;
-                    parseResultsArr = parseResultsArrBeforeToken.concat(splitOnTokenArr[1], parseResultsArrAfterToken);
+                if(parseResultsArrBeforeToken.length > 0) {
+                    parseResultsArrAfterToken = memoizedFunc(parseSchemaFragment,
+                                                             [splitOnTokenArr[2].trim(), partsArr.slice(tokenIndex + 1), matchEntire ], 
+                                                              funcIds.parseSchemaFragment);
+
+                    parseResultsArrBeforeToken.forEach(function(beforeResult) {
+                        beforeResult.pop(); // textRemaining === "" since matchEntire is true
+                        parseResultsArrAfterToken.forEach(function(afterResult) {
+                            parseResultsArr.push(beforeResult.concat([splitOnTokenArr[1]], afterResult));
+                        });
+                    });
                 }
 
                 textThroughPreviousToken += splitOnTokenArr[0] + splitOnTokenArr[1];
@@ -263,33 +292,25 @@
     };
 
     var parseTextFragmentByCategory = function(text, category, matchEntire) {
-        // parse text using first matching schema in category
-        // returns array [schema identifier, args[0], args[1], ..., args[n], textRemaining]
-        // or null if no matching schema
+        // parse text using each matching schema in category;
+        // returns array of arrays for each one; each in the form 
+        // [schema identifier, args[0], args[1], ..., args[n], textRemaining]
 
-        var key = tupleToStr([text, category, matchEntire]);
-        var i = 0;
-        var result = undefined;
+        var results;
+        var parseResultsArr = [];
         var schemas = processingOrder[category];
         var schemaArr;
 
-        if(key in memo) {
-            result = memo[key];
-        } else {
-            while(!result && i < schemas.length) {
-                schemaArr = statementPartSchema[category][schemas[i]];
-                result = parseTextOnFirstToken(text, schemaArr, matchEntire);
-                if(result) {
-                    result = [schemas[i]].concat(result); // add schema identifier to front of result array
-                }
-                i++;
-            }
+        schemas.forEach(function(schema) {
+            schemaArr = statementPartSchema[category][schema];
+            results = memoizedFunc(parseTextOnFirstToken, [text, schemaArr, matchEntire], 
+                                   funcIds.parseTextOnFirstToken);
+            results.forEach(function(result) {
+                parseResultsArr.push( [schema].concat(result) ); // add schema identifier to front of result array
+            });
+        });
 
-            memo[key] = result;
-        }
-
-        return result ? result.slice() : null; // return shallow copy so other functions can change array without
-                                               // affecting memo entries
+        return parseResultsArr;
     };
 
     namespace.exports.parseText = function(text) {
@@ -299,7 +320,12 @@
         var parsedStatements = [];
 
         statements.forEach(function(statement) {
-            parsedStatements.push(parseTextFragmentByCategory(statement, "statementGeneral", true));
+            var result = memoizedFunc(parseTextFragmentByCategory, [statement, "statementGeneral", true],
+                                      funcIds.parseTextFragmentByCategory);
+            console.log("Number of Possibilities: " + result.length);
+            if(result.length > 0) {
+                parsedStatements.push(result[0]);
+            }
             console.log("Parsed Statement:" + parsedStatements[parsedStatements.length-1] + "\n");
         });
 
