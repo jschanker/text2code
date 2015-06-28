@@ -185,51 +185,54 @@
     };
 
     var parseSchemaFragment = function(text, schemaArrFragment, matchEntire) {
-        var i = 0;
-        var parseResultsArr = [];
-        var result;
+        // returns all possible schemaArrFragment parsings of a prefix of text;
+        // full text if matchEntire is true
+        // in form []
+        var i;
+        var parseResultsArr = []; // all possible results for schemaArrFragment
+        var result = undefined; 
+        var resultArr = null; // result for schemaArrFragment[1:]
+        var results; // possible results for schemaArrFragment[0]
         var textRemaining = text.toLowerCase().trim();
-        var tokenName;
 
-        while(parseResultsArr !== null && i < schemaArrFragment.length) {
-            if(schemaArrFragment[i] in statementPartSchema.tokens) {
-                result = splitOnFirst(textRemaining, schemaArrFragment[i], true);
-                result = result ? result.slice(1) : null; // token at start so result[0] == ""
-            } else {
-                result = parseTextFragmentByCategory(textRemaining, schemaArrFragment[i]);
-            }
-            if(result !== null) {
-                textRemaining = result[result.length - 1].trim();
-                result.pop(); // remove textRemaining
-                parseResultsArr.push(result);
-            } else {
-                parseResultsArr = null;
-            }
-            i++;
+        if(schemaArrFragment.length === 0) {
+            return (textRemaining === "" || !matchEntire) ? [[textRemaining]] : [];
+        }
+        else if(schemaArrFragment[0] in statementPartSchema.tokens) {
+            result = splitOnFirst(textRemaining, schemaArrFragment[0], true);
+            results = result ? [result.slice(1)] : []; // token at start so result[0] == ""
+        }
+        else {
+            results = parseTextFragmentByCategory(textRemaining, schemaArrFragment[0]);
         }
 
-        if( parseResultsArr !== null && (!matchEntire || textRemaining.trim() === "") ) {
-            parseResultsArr.push(textRemaining);
-        } else {
-            parseResultsArr = null;
-        }
+        results.forEach(function(result) {
+            textRemaining = result[result.length-1].trim();
+            result.pop(); // remove textRemaining
+            resultArr = parseSchemaFragment(textRemaining, schemaArrFragment.slice(1), matchEntire);
+            resultArr.forEach(function(suffixResult) {
+                parseResultsArr.push([result].concat(suffixResult));
+            });
+        });
+
+        //if(matchEntire && parseResultsArr.length > 0)
+        //    console.log("Final:" + parseResultsArr);
 
         return parseResultsArr;
     };
 
     var parseTextOnFirstToken = function(text, partsArr, matchEntire) {
-        // parse text on token appearing first in partsArr on the first
+        // parse text on token appearing first in partsArr on each
         // occurrence in text that forms an instance of partsArr schema
-        // returns array [args[0], args[1], ..., args[n], textRemaining]
+        // returns array of arrays [args[0], args[1], ..., args[n], textRemaining]
         // or null if text can't be split on any token to match partsArr schema
 
         var tokenIndex = getFirstTokenIndex(partsArr);
         var tokenName = tokenIndex >= 0 ? partsArr[tokenIndex] : "NOT_FOUND";
         var textRemaining = text.trim().toLowerCase();
         var textThroughPreviousToken = "";
-        var foundMatchingTokenSplit = false;
         var splitOnTokenArr;
-        var parseResultsArr = null;
+        var parseResultsArr = [];
         var parseResultsArrBeforeToken;
         var parseResultsArrAfterToken;
 
@@ -239,19 +242,19 @@
         } else {
             splitOnTokenArr = splitOnFirst(textRemaining, tokenName);
 
-            while(!foundMatchingTokenSplit && splitOnTokenArr) {
-                parseResultsArr = null;
-                parseResultsArrAfterToken = undefined; // reset 
+            while(splitOnTokenArr) {
                 parseResultsArrBeforeToken = parseSchemaFragment( (textThroughPreviousToken + splitOnTokenArr[0]).trim(), 
     	    	                                                   partsArr.slice(0, tokenIndex), true );
-                if(parseResultsArrBeforeToken) {
-                    parseResultsArrBeforeToken.pop(); // textRemaining === "" since matchEntire is true
-                    parseResultsArrAfterToken = parseSchemaFragment(splitOnTokenArr[2].trim(), partsArr.slice(tokenIndex + 1), matchEntire );
-                }
 
-                if(parseResultsArrAfterToken) {
-                    foundMatchingTokenSplit = true;
-                    parseResultsArr = parseResultsArrBeforeToken.concat(splitOnTokenArr[1], parseResultsArrAfterToken);
+                if(parseResultsArrBeforeToken.length > 0) {
+                    parseResultsArrAfterToken = parseSchemaFragment(splitOnTokenArr[2].trim(), partsArr.slice(tokenIndex + 1), matchEntire );
+
+                    parseResultsArrBeforeToken.forEach(function(beforeResult) {
+                        beforeResult.pop(); // textRemaining === "" since matchEntire is true
+                        parseResultsArrAfterToken.forEach(function(afterResult) {
+                            parseResultsArr.push(beforeResult.concat([splitOnTokenArr[1]], afterResult));
+                        });
+                    });
                 }
 
                 textThroughPreviousToken += splitOnTokenArr[0] + splitOnTokenArr[1];
@@ -263,33 +266,38 @@
     };
 
     var parseTextFragmentByCategory = function(text, category, matchEntire) {
-        // parse text using first matching schema in category
-        // returns array [schema identifier, args[0], args[1], ..., args[n], textRemaining]
-        // or null if no matching schema
+        // parse text using each matching schema in category;
+        // returns array of arrays for each one; each in the form 
+        // [schema identifier, args[0], args[1], ..., args[n], textRemaining]
+        // or null if no matching schema X (no longer true)
 
         var key = tupleToStr([text, category, matchEntire]);
-        var i = 0;
-        var result = undefined;
+        var results;
+        var parseResultsArr = [];
         var schemas = processingOrder[category];
         var schemaArr;
+        var schema;
+        var i;
 
         if(key in memo) {
-            result = memo[key];
+            parseResultsArr = memo[key];
         } else {
-            while(!result && i < schemas.length) {
-                schemaArr = statementPartSchema[category][schemas[i]];
-                result = parseTextOnFirstToken(text, schemaArr, matchEntire);
-                if(result) {
-                    result = [schemas[i]].concat(result); // add schema identifier to front of result array
-                }
-                i++;
+            for(i = 0; i < schemas.length; i++) {
+                schema = schemas[i];
+                schemaArr = statementPartSchema[category][schema];
+                results = parseTextOnFirstToken(text, schemaArr, matchEntire);
+                results.forEach(function(result) {
+                    parseResultsArr.push( [schema].concat(result) ); // add schema identifier to front of result array
+                });
             }
 
-            memo[key] = result;
+            //memo[key] = resultArr;
         }
 
-        return result ? result.slice() : null; // return shallow copy so other functions can change array without
-                                               // affecting memo entries
+        return parseResultsArr;//.map(function(resultd) {
+        //        return resultd.slice(); // store shallow copies of each array so other functions can change them
+                                       // without affecting memo entries
+        //    });
     };
 
     namespace.exports.parseText = function(text) {
@@ -299,7 +307,11 @@
         var parsedStatements = [];
 
         statements.forEach(function(statement) {
-            parsedStatements.push(parseTextFragmentByCategory(statement, "statementGeneral", true));
+            var result = parseTextFragmentByCategory(statement, "statementGeneral", true);
+            console.log("Number of Possibilities: " + result.length);
+            if(result.length > 0) {
+                parsedStatements.push(result[0]);
+            }
             console.log("Parsed Statement:" + parsedStatements[parsedStatements.length-1] + "\n");
         });
 
