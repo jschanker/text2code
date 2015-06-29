@@ -6,12 +6,13 @@
         tokens : {
             integer                :  [/-\d+|\d+/],
             variable               :  [/[A-Za-z_]\w*/],
-            word                   :  [/[A-Za-z]+/],
+            word                   :  [/[^""''\n\r\u2028\u2029]*/],
             equals                 :  ["is equal to", "equals to", "equals", "="],
             comma                  :  [","],
             semicolon              :  [";"],
             "if"                   :  ["if"],
             "else"                 :  ["otherwise", "else"],
+            print                  :  ["print", "output"],
             set                    :  ["set"],
             then                   :  ["then"],
             commaThen              :  [", then", ",then", ",", "then"],
@@ -21,12 +22,17 @@
                                        "go through", "every", "for all", "all", "each", "for"],
             "true"                 :  ["true", "yes"],
             "false"                :  ["false", "no"],
+            number                 :  ["at position number", "at position #", "at position", "at number", 
+                                       "number", "at #", "#", "position"],
+            "substring"            :  ["substring"],
             from                   :  ["from"],
             to                     :  ["to"],
+            "in"                   :  ["in"],
             increase               :  ["increase", "augment", "increment"],
             decrease               :  ["decrease", "decrement"],
             by                     :  ["by"],
-            not                    :  ["not"],
+            of                     :  ["of"],
+            not                    :  ["is not", "not"],
             or                     :  ["or"],
             and                    :  ["and"],
             lessThan               :  ["is less than", "less than", "<"],
@@ -43,8 +49,20 @@
             multiply               :  ["\\*", "multiply", "times"],
             divide                 :  ["\\/", "divided by", "divide"],
             modulo                 :  ["modulo", "mod", "modulus"],
+            squareRoot             :  ["the square root of", "square root of", "square root", "sqrt"],
+            even                   :  ["is even", "even"],
+            odd                    :  ["is odd", "odd"],
+            negative               :  ["is negative", "negative"],
+            positive               :  ["is positive", "positive"],
+            prime                  :  ["is prime", "prime"],
             remainderOf            :  ["the remainder of", "remainder of"],
             power                  :  ["\\^", "raised to the", "to the", "power"],
+            first                  :  ["the first", "first"],
+            last                   :  ["the last", "last", "final"],
+            character              :  ["the character", "character", "the letter", "letter"],
+            //concatenate            :  ["joined with", "concatenated with", "concatenate", "join", "with", "plus", "\\+"],
+            concatenate            :  ["concatenated with", "concatenate with", "concatenate"],//, "plus", "\\+"],
+            join                   :  ["joined with", "join with", "join"],
             quotationMark          :  ['\\"', "\\'"],
             openBracket            :  ["{"],
             closeBracket           :  ["}"],
@@ -61,10 +79,15 @@
             expressionLessThanEq   :  ["expressionNumerical", "lessThanOrEq", "expressionNumerical"],
             expressionGreaterThan  :  ["expressionNumerical", "greaterThan", "expressionNumerical"],
             expressionGreaterThanEq:  ["expressionNumerical", "greaterThanOrEq", "expressionNumerical"],
-            expressionEquals       :  ["expressionNumerical", "equals", "expressionNumerical"],
-            expressionNotEquals    :  ["expressionNumerical", "notEquals", "expressionNumerical"],
+            expressionEquals       :  ["expressionGeneral", "equals", "expressionGeneral"],
+            expressionNotEquals    :  ["expressionGeneral", "notEquals", "expressionGeneral"],
             expressionDivisibleBy  :  ["expressionNumerical", "divisibleBy", "expressionNumerical"],
             expressionFactorOf     :  ["expressionNumerical", "factorOf", "expressionNumerical"],
+            expressionEven         :  ["expressionNumerical", "even"],
+            expressionOdd          :  ["expressionNumerical", "odd"],
+            expressionPositive     :  ["expressionNumerical", "positive"],
+            expressionNegative     :  ["expressionNumerical", "negative"],
+            expressionPrime        :  ["expressionNumerical", "prime"],
             expressionOr           :  ["expressionLogical", "or", "expressionLogical"],
             expressionAnd          :  ["expressionLogical", "and", "expressionLogical"],
             expressionNot          :  ["not", "expressionLogical"],
@@ -81,13 +104,25 @@
             expressionPower        :  ["expressionNumerical", "power", "expressionNumerical"],
             expressionRemainderOf  :  ["remainderOf", "expressionNumerical", "divide", "expressionNumerical"],
             expressionModulo       :  ["expressionNumerical", "modulo", "expressionNumerical"],
+            expressionSquareRoot   :  ["squareRoot", "expressionNumerical"],
+            expressionFirstIndexOf :  ["number", "of", "first", "expressionString", "in", "expressionString"],
+            expressionLastIndexOf  :  ["number", "of", "last", "expressionString", "in", "expressionString"],
             expressionVariable     :  ["variable"],
             expressionNumBlock     :  ["openParenthesis", "expressionNumerical", "closeParenthesis"]
         },
 
         expressionString : {
             expressionText         :  ["quotationMark", "word", "quotationMark"],
-            expressionVariable     :  ["variable"]
+            expressionVariable     :  ["variable"],
+            expressionConcatenate  :  ["expressionString", "concatenate", "expressionString"],
+            expressionJoinStr      :  ["expressionString", "join", "expressionString"],
+            expressionPlusStr      :  ["expressionString", "plus", "expressionString"],
+            expressionStringBlock  :  ["openParenthesis", "expressionString", "closeParenthesis"],
+            expressionFirstChar    :  ["first", "character", "of", "expressionString"],
+            expressionLastChar     :  ["last", "character", "of", "expressionString"],
+            expressionCharNumber   :  ["character", "number", "expressionNumerical", "of", "expressionString"],
+            expressionSubstringPos :  ["substring", "of", "expressionString", "from", "number", "expressionNumerical", "to", 
+                                       "number", "expressionNumerical"],
         },
 
         expressionGeneral : {
@@ -116,7 +151,8 @@
             statementUntil         :  ["until", "expressionLogical", "comma", "statementGeneral"],
             statementIfThen        :  ["if", "expressionLogical", "commaThen", "statementGeneral"],
             statementIfThenAlt     :  ["if", "expressionLogical", "commaThen", "statementGeneral", 
-                                       "semicolon", "statementConditional"]
+                                       "semicolon", "statementConditional"],
+            statementPrint         :  ["print", "expressionGeneral"]
         }
     };
 
@@ -127,15 +163,18 @@
         expressionLogical     : ["expressionOr", "expressionAnd", "expressionNot", 
                                  "expressionNotEquals", "expressionLessThanEq", "expressionGreaterThanEq", 
                                  "expressionLessThan", "expressionGreaterThan", 
-                                 "expressionEquals", "expressionDivisibleBy", "expressionFactorOf", 
+                                 "expressionEquals", "expressionDivisibleBy", "expressionFactorOf", "expressionEven",
+                                 "expressionOdd", "expressionPositive", "expressionNegative", "expressionPrime",
                                  "expressionLogicalBlock", "expressionTrue", "expressionFalse", "expressionVariable"],
         expressionNumerical   : ["expressionNumBlock", "expressionInteger", "expressionVariable", "expressionSum", "expressionDifference", 
                                  "expressionProduct", "expressionDivide", "expressionModulo", "expressionRemainderOf",
-                                 "expressionPower"],
-        expressionString      : ["expressionText", "expressionVariable"],
+                                 "expressionPower", "expressionSquareRoot", "expressionFirstIndexOf", "expressionLastIndexOf"],
+        expressionString      : ["expressionStringBlock", "expressionConcatenate", "expressionJoinStr", "expressionPlusStr", 
+                                 "expressionFirstChar", "expressionLastChar", "expressionCharNumber", "expressionText", 
+                                 "expressionSubstringPos", "expressionVariable"],
         statementGeneral      : ["statementBlock", "statementJoin", "statementAssignment", "statementIncreaseVar", 
                                  "statementDecreaseVar", "statementForLessThan", "statementForFromTo", "statementWhile", 
-                                 "statementUntil", "statementIfThenAlt", "statementIfThen"],
+                                 "statementUntil", "statementIfThenAlt", "statementIfThen", "statementPrint"],
         statementConditional  : ["statementElseIfMore", "statementElseIf", "statementElse"]
     };
 
@@ -314,7 +353,6 @@
     };
 
     namespace.exports.parseText = function(text) {
-        //text = document.getElementById("pseudocode").value; // Remove later
         var statementCount = text.split(statementPartSchema.tokens.statementSeparator).length;
         var statements = text.split(statementPartSchema.tokens.fullStatementSeparator[0]);
         var parsedStatements = [];
