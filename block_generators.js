@@ -28,6 +28,15 @@
         return XMLCode;
     };
 
+    namespace.exports.generateTextPrint = function(textBlock) {
+        var XMLCode = generateOpenBlockTag("text_print");
+        XMLCode += generateAttributeElement("value", "TEXT", textBlock);
+        XMLCode += "<next>";
+        numberOfUnclosedStatements++;
+
+        return XMLCode;
+    };
+
     var generateLogicBoolean = function(isTrue) {
         var truthValue = isTrue ? "true" : "false";
         var XMLCode = generateOpenBlockTag("logic_boolean");
@@ -84,6 +93,81 @@
 
         return XMLCode;
     };
+
+    var generateMathSingle = function(OP, valueBlockNum) {
+        var XMLCode = generateOpenBlockTag("math_single");
+        XMLCode += generateAttributeElement("field", "OP", OP);
+        XMLCode += generateAttributeElement("value", "NUM", valueBlockNum);
+        XMLCode += "</block>";
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateMathSingleSquareRoot = generateMathSingle.bind(null, "ROOT");
+
+    namespace.exports.generateTextJoin = function(valueBlockAdd0, valueBlockAdd1) {
+        var XMLCode = generateOpenBlockTag("text_join");
+        XMLCode += "<mutation items = \"2\"></mutation>";
+        XMLCode += generateAttributeElement("value", "ADD0", valueBlockAdd0);
+        XMLCode += generateAttributeElement("value", "ADD1", valueBlockAdd1);
+        XMLCode += "</block>";
+
+        return XMLCode;
+    };
+
+    var generateTextCharAt = function(hasTwo, WHERE, valueBlock, atBlock) {
+        var XMLCode = generateOpenBlockTag("text_charAt");
+
+        hasTwo = hasTwo ? "true" : "false";
+        XMLCode += "<mutation at = \"" + hasTwo + "\"></mutation>";
+        XMLCode += generateAttributeElement("field", "WHERE", WHERE);
+        XMLCode += generateAttributeElement("value", "VALUE", valueBlock);
+        if(atBlock) {
+            XMLCode += generateAttributeElement("value", "AT", atBlock);
+        }
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateTextCharAtFirst = generateTextCharAt.bind(null, false, "FIRST");
+    namespace.exports.generateTextCharAtLast = generateTextCharAt.bind(null, false, "LAST");
+    namespace.exports.generateTextCharFromStart = generateTextCharAt.bind(null, true, "FROM_START");
+
+    var generateTextGetSubstring = function(hasStart, hasEnd, WHERE1, WHERE2, strValueBlock, at1Block, at2Block) {
+        var hasFirst = hasStart ? "true" : "false";
+        var hasSecond = hasEnd ? "true" : "false";
+        var XMLCode = generateOpenBlockTag("text_getSubstring");
+
+        XMLCode += "<mutation at1 = \"" + hasFirst + "\" at2 = \"" + hasSecond + "\"></mutation>";
+        XMLCode += generateAttributeElement("field", "WHERE1", WHERE1);
+        XMLCode += generateAttributeElement("field", "WHERE2", WHERE2);
+        XMLCode += generateAttributeElement("value", "STRING", strValueBlock);
+        if(at1Block) {
+            XMLCode += generateAttributeElement("value", "AT1", at1Block);
+        }
+        if(at2Block) {
+            XMLCode += generateAttributeElement("value", "AT2", at2Block);
+        }
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateTextGetSubstringPosToPos = generateTextGetSubstring.bind(null, true, true, "FROM_START", "FROM_START");
+    namespace.exports.generateTextGetSubstringStartToPos = generateTextGetSubstring.bind(null, false, true, "FIRST", "FROM_START");
+    namespace.exports.generateTextGetSubstringPosToEnd = generateTextGetSubstring.bind(null, true, false, "FROM_START", "LAST");
+
+    var generateTextIndexOf = function(fromEnd, strValueBlock, findBlock) {
+        var END = fromEnd ? "LAST" : "FIRST";
+        var XMLCode = generateOpenBlockTag("text_indexOf");
+        XMLCode += generateAttributeElement("field", "END", END);
+        XMLCode += generateAttributeElement("value", "VALUE", strValueBlock);
+        XMLCode += generateAttributeElement("value", "FIND", findBlock);
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateTextIndexOfFirst = generateTextIndexOf.bind(null, false);
+    namespace.exports.generateTextIndexOfLast = generateTextIndexOf.bind(null, true);
 
     var generateUpdateVariable = function(OP, variable, valueBlock) {
         return namespace.exports.generateVariablesSet(variable, 
@@ -192,6 +276,21 @@
         return XMLCode;
     };
 
+    var generateMathNumberProperty = function(OP, valueBlockToCheck) {
+        var XMLCode = generateOpenBlockTag("math_number_property");
+        XMLCode += generateAttributeElement("field", "PROPERTY", OP);
+        XMLCode += generateAttributeElement("value", "NUMBER_TO_CHECK", valueBlockToCheck);
+        XMLCode += "</block>";
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateMathNumberPropertyEven = generateMathNumberProperty.bind(null, "EVEN"),
+    namespace.exports.generateMathNumberPropertyOdd = generateMathNumberProperty.bind(null, "ODD"),
+    namespace.exports.generateMathNumberPropertyPositive = generateMathNumberProperty.bind(null, "POSITIVE"),
+    namespace.exports.generateMathNumberPropertyNegative = generateMathNumberProperty.bind(null, "NEGATIVE"),
+    namespace.exports.generateMathNumberPropertyPrime = generateMathNumberProperty.bind(null, "PRIME"),
+
     namespace.exports.generateMathNumberPropertyDivisible = function(valueBlockToCheck, valueBlockDivisor) {
         var XMLCode = generateOpenBlockTag("math_number_property");
         XMLCode += "<mutation divisor_input = \"true\"></mutation>";
@@ -213,8 +312,6 @@
 
     namespace.exports.generateLogicOperationOr = generateLogicOperation.bind(null, true);
     namespace.exports.generateLogicOperationAnd = generateLogicOperation.bind(null, false);
-
-
 
     var generateLogicCompare = function(OP, valueBlockA, valueBlockB) {
         var XMLCode = generateOpenBlockTag("logic_compare");
