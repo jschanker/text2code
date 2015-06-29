@@ -17,6 +17,13 @@
         expressionPower         : [bg.generateMathArithmeticPower, [1, 3]],
         expressionModulo        : [bg.generateMathModulo, [1, 3]],
         expressionRemainderOf   : [bg.generateMathModulo, [2, 4]],
+        expressionSquareRoot    : [bg.generateMathSingleSquareRoot, [2]],
+        expressionFirstChar     : [bg.generateTextCharAtFirst, [4]],
+        expressionLastChar      : [bg.generateTextCharAtLast, [4]],
+        expressionCharNumber    : [bg.generateTextCharFromStart, [5, 3]],
+        expressionSubstringPos  : [bg.generateTextGetSubstringPosToPos, [3, 6, 9]],
+        expressionFirstIndexOf  : [bg.generateTextIndexOfFirst, [6, 4]],  
+        expressionLastIndexOf   : [bg.generateTextIndexOfLast, [6, 4]], 
         expressionLessThan      : [bg.generateLogicCompareLT, [1, 3]],
         expressionLessThanEq    : [bg.generateLogicCompareLTE, [1, 3]],
         expressionGreaterThan   : [bg.generateLogicCompareGT, [1, 3]],
@@ -25,6 +32,14 @@
         expressionNotEquals     : [bg.generateLogicCompareNEQ, [1, 3]],
         expressionDivisibleBy   : [bg.generateMathNumberPropertyDivisible, [1, 3]],
         expressionFactorOf      : [bg.generateMathNumberPropertyDivisible, [3, 1]],
+        expressionEven          : [bg.generateMathNumberPropertyEven, [1]],
+        expressionOdd           : [bg.generateMathNumberPropertyOdd, [1]],
+        expressionPositive      : [bg.generateMathNumberPropertyPositive, [1]],
+        expressionNegative      : [bg.generateMathNumberPropertyNegative, [1]],
+        expressionPrime         : [bg.generateMathNumberPropertyPrime, [1]],
+        expressionConcatenate   : [bg.generateTextJoin, [1, 3]],
+        expressionJoinStr       : [bg.generateTextJoin, [1, 3]],
+        expressionPlusStr       : [bg.generateTextJoin, [1, 3]],
         expressionNot           : [bg.generateLogicNegate, [2]],
         expressionOr            : [bg.generateLogicOperationOr, [1, 3]],
         expressionAnd           : [bg.generateLogicOperationAnd, [1, 3]],
@@ -33,6 +48,7 @@
         expressionGenString     : [identity, [1]],
         expressionLogicalBlock  : [identity, [2]],
         expressionNumBlock      : [identity, [2]],
+        expressionStringBlock   : [identity, [2]],
 
         statementBlock          : [identity, [2]],
         statementIfThenAlt      : [bg.generateControlsIf, [2, 4, 6]],
@@ -48,6 +64,7 @@
         statementWhile          : [bg.generateControlsWhile, [2, 4]],
         statementUntil          : [bg.generateControlsUntil, [2, 4]],
         statementIfThen         : [bg.generateControlsIf, [2, 4]],
+        statementPrint          : [bg.generateTextPrint, [2]]
     };
 
     function identity(x) {
