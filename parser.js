@@ -228,6 +228,24 @@
 
         return null;
     };
+    
+    var addTokens = function(tokenName) {
+        // create a new token for each item in statementPartSchema.tokens[tokenName]
+        // returns array of new token names
+        var tokenArr = statementPartSchema.tokens[tokenName] ? statementPartSchema.tokens[tokenName] : [];
+        var namePadding = "__";
+        var tokenNames = [];
+        var strTokenName;
+        var i;
+
+        for(i = 0; i < tokenArr.length; i++) {
+            strTokenName = namePadding + tokenName + i + namePadding;
+            tokenNames.push(strTokenName);
+            statementPartSchema.tokens[strTokenName] = [tokenArr[i]];
+        }
+
+        return tokenNames;
+    };
 
     var memoizedFunc = function(func, argArr, uid) {
         var key = tupleToStr(argArr.concat(uid));
@@ -297,34 +315,44 @@
         var parseResultsArr = [];
         var parseResultsArrBeforeToken;
         var parseResultsArrAfterToken;
+        var tokenNames;
+        var partsArrBeforeFirstToken;
+        var partsArrAfterFirstToken;
 
         if(tokenIndex <= 0) {
             // For efficiency : don't need to check each possible match if token needs to be at start
             parseResultsArr = parseSchemaFragment(textRemaining, partsArr, matchEntire);
         } else {
-            splitOnTokenArr = splitOnFirst(textRemaining, tokenName);
+            partsArrBeforeFirstToken = partsArr.slice(0, tokenIndex);
+            partsArrAfterFirstToken = partsArr.slice(tokenIndex + 1);
+            tokenNames = addTokens(tokenName);
 
-            while(splitOnTokenArr) {
-                parseResultsArrBeforeToken = memoizedFunc(parseSchemaFragment, 
-                                                          [ (textThroughPreviousToken + splitOnTokenArr[0]).trim(), 
-                                                           partsArr.slice(0, tokenIndex), true ], funcIds.parseSchemaFragment);
+            tokenNames.forEach(function(derivedTokenName) {
+                textThroughPreviousToken = "";
+                splitOnTokenArr = splitOnFirst(textRemaining, derivedTokenName);
 
-                if(parseResultsArrBeforeToken.length > 0) {
-                    parseResultsArrAfterToken = memoizedFunc(parseSchemaFragment,
-                                                             [splitOnTokenArr[2].trim(), partsArr.slice(tokenIndex + 1), matchEntire ], 
-                                                              funcIds.parseSchemaFragment);
+                while(splitOnTokenArr) {
+                    parseResultsArrBeforeToken = memoizedFunc(parseSchemaFragment, 
+                                                              [ (textThroughPreviousToken + splitOnTokenArr[0]).trim(), 
+                                                               partsArrBeforeFirstToken, true ], funcIds.parseSchemaFragment);
 
-                    parseResultsArrBeforeToken.forEach(function(beforeResult) {
-                        beforeResult.pop(); // textRemaining === "" since matchEntire is true
-                        parseResultsArrAfterToken.forEach(function(afterResult) {
-                            parseResultsArr.push(beforeResult.concat([splitOnTokenArr[1]], afterResult));
+                    if(parseResultsArrBeforeToken.length > 0) {
+                        parseResultsArrAfterToken = memoizedFunc(parseSchemaFragment,
+                                                                 [splitOnTokenArr[2].trim(), partsArrAfterFirstToken, matchEntire ], 
+                                                                  funcIds.parseSchemaFragment);
+
+                        parseResultsArrBeforeToken.forEach(function(beforeResult) {
+                            beforeResult.pop(); // textRemaining === "" since matchEntire is true
+                            parseResultsArrAfterToken.forEach(function(afterResult) {
+                                parseResultsArr.push(beforeResult.concat([splitOnTokenArr[1]], afterResult));
+                            });
                         });
-                    });
-                }
+                    }
 
-                textThroughPreviousToken += splitOnTokenArr[0] + splitOnTokenArr[1];
-                splitOnTokenArr = splitOnFirst(splitOnTokenArr[2], tokenName);
-            }
+                    textThroughPreviousToken += splitOnTokenArr[0] + splitOnTokenArr[1];
+                    splitOnTokenArr = splitOnFirst(splitOnTokenArr[2], derivedTokenName);
+                }
+            });
         }
 
         return parseResultsArr;
