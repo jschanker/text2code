@@ -76,7 +76,7 @@ h1 {
 
 }
 
-#pseudocode {
+#pseudocode, #pythonCode, #jsCode {
 	height:300px;
 	width:100%;
 	resize:vertical;
