@@ -38,7 +38,7 @@
     };
 
     var generateLogicBoolean = function(isTrue) {
-        var truthValue = isTrue ? "true" : "false";
+        var truthValue = isTrue ? "TRUE" : "FALSE";
         var XMLCode = generateOpenBlockTag("logic_boolean");
         XMLCode += generateAttributeElement("field", "BOOL", truthValue);
         XMLCode += "</block>";
@@ -104,6 +104,14 @@
     };
 
     namespace.exports.generateMathSingleSquareRoot = generateMathSingle.bind(null, "ROOT");
+
+    namespace.exports.generateTextLength = function(textBlock) {
+        var XMLCode = generateOpenBlockTag("text_length");
+        XMLCode += generateAttributeElement("value", "VALUE", textBlock);
+        XMLCode += "</block>";
+
+        return XMLCode;
+    };
 
     namespace.exports.generateTextJoin = function(valueBlockAdd0, valueBlockAdd1) {
         var XMLCode = generateOpenBlockTag("text_join");
