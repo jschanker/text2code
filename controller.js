@@ -108,6 +108,17 @@
 
         return "";
     };
+    
+    function run() {
+        window.LoopTrap = 1000;
+        Blockly.JavaScript.INFINITE_LOOP_TRAP = 'if(--window.LoopTrap == 0) throw "Infinite loop.";\n';
+        var code = Blockly.JavaScript.workspaceToCode();
+        try {
+            eval(code);
+        } catch(e) {
+            alert(e.toString());
+        }
+    }
 
     namespace.exports.processText = function() {
         var text = document.getElementById("pseudocode").value;
@@ -127,6 +138,9 @@
         startBlockField.innerHTML = XMLCode;
         Blockly.mainWorkspace.clear();
         Blockly.Xml.domToWorkspace(Blockly.mainWorkspace, startBlockField);
+        document.getElementById('pythonCode').value = Blockly.Python.workspaceToCode();
+        document.getElementById('jsCode').value = Blockly.JavaScript.workspaceToCode();
+        run();
     };
     
 })(provide("controller"));
