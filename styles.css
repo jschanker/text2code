@@ -3,44 +3,72 @@ body {
 	margin:0px;
 }
 
-.tableContainer {
-	display:table;
-	width:100%;
-}
-
 form {
 	width:100%;
 }
 
-.tableRow {
-	display:table-row;
+.tableContainer {
+	background-color:#33beb6;
+	vertical-align:top;
+	margin:0px;
+	/*background-color:#ff8800;*/
 }
 
-.tableCell {
-	display:table-cell;
-	vertical-align: top;
-	padding:1%;
+@media screen and (max-width: 600px) {
+	.tableContainer {
+		padding: 0% 2% 2% 1%;
+		width:97.1%;
+		margin:0px;
+	}
+	.tableRow, .tableCell {
+		margin: 0px;
+	}
+
+	.tableRow {
+		border-top: 1px solid #33beb6;
+		border-bottom: 1px solid #33b8b6;
+	}
+}
+
+@media screen and (min-width: 601px) { 
+	.tableContainer {
+		display:table;
+		width:100%;
+	}
+
+	.tableRow {
+		display:table-row;
+	}
+
+	.tableCell {
+		display: table-cell;
+		vertical-align: top;
+		padding: 0% 2% 2% 1%;
+	}
+
+	#pseudocodeCell {
+		width: 42%;
+	}
+
+	#codeCell, #jsCell {
+		width: 42%;
+	}
+
+	#convertCell {
+		vertical-align: middle;
+		width:10%;
+	}
 }
 
 #convertCell {
-	vertical-align: middle;
 	text-align: center;
-	width:10%;
-}
-
-#pseudocodeCell {
-	width: 43%;
-}
-
-#codeCell {
-	width: 43%;
 }
 
 header {
 	font-size: 300%;
 	padding:0px 10px;
 	text-align: center;
-	background-color:#202020;
+	background-color:#292929;
 }
 
 footer {
@@ -48,7 +76,9 @@ footer {
 	color: #fff;
 	padding:0px 10px;
 	text-align: center;
-	background-color:#202020;
+	background-color:#292929;
+	border-top:1px solid #33beb6;
+	border-bottom:1px solid #292929;
 }
 
 h1 {
@@ -59,17 +89,24 @@ h1 {
 
 #twoHeader {
 	background-color: #aaa;
-	color: #202020; 
+	color: #292929; 
 	padding: 0px 30px;
 	border-radius:500px;
 }
 
 #codeTextHeader {
-	color:#007700;
+	/*color:#007700;*/
+	color:#ffffff;
+	/*color:#33beb6;*/
 }
 
 #textHeader {
 	color:#ffffff;
+	/*color:#33beb6;*/
+}
+
+.tableCell {
+	color: #fff;
 }
 
 #convertBtn {
