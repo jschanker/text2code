@@ -160,7 +160,7 @@ h1 {
 
 #startBlocks ~ * {
 	height:300px;
-	max-width:100%;
+	width:100%;
 	border:1px solid black;
 	overflow:scroll;
 }
