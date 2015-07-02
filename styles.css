@@ -1,10 +1,12 @@
 body {
 	font-family: verdana, sans-serif;
 	margin:0px;
+	overflow-x:hidden;
 }
 
-form {
-	width:100%;
+h2, h3 {
+	margin:0px;
+	padding-bottom:10px;
 }
 
 .tableContainer {
@@ -14,10 +16,40 @@ form {
 	/*background-color:#ff8800;*/
 }
 
+@media screen and (max-width: 500px) {
+	header {
+		font-size: 115%;
+	}
+}
+
+@media screen and (min-width: 500px) and (max-width: 599px) {
+	header {
+		font-size: 150%;
+	}
+}
+
+@media screen and (min-width: 600px) and (max-width: 699px) {
+	header {
+		font-size: 200%;
+	}
+}
+
+@media screen and (min-width: 700px) and (max-width: 799px) {
+	header {
+		font-size: 250%;
+	}
+}
+
+@media screen and (min-width: 800px) {
+	header {
+		font-size: 300%;
+	}
+}
+
 @media screen and (max-width: 600px) {
 	.tableContainer {
-		padding: 0% 2% 2% 1%;
-		width:97.1%;
+		padding: 0% 2% 2% 2%;
+		width:96%;
 		margin:0px;
 	}
 	.tableRow, .tableCell {
@@ -25,12 +57,15 @@ form {
 	}
 
 	.tableRow {
-		border-top: 1px solid #33beb6;
 		border-bottom: 1px solid #33b8b6;
+	}
+
+	#codeCell {
+		padding-right: 1%;
 	}
 }
 
-@media screen and (min-width: 601px) { 
+@media screen and (min-width: 601px) {
 	.tableContainer {
 		display:table;
 		width:100%;
@@ -43,15 +78,16 @@ form {
 	.tableCell {
 		display: table-cell;
 		vertical-align: top;
-		padding: 0% 2% 2% 1%;
+		padding: 0% 1% 1% 1%;
 	}
 
 	#pseudocodeCell {
 		width: 42%;
 	}
 
-	#codeCell, #jsCell {
+	#codeCell {
 		width: 42%;
+		padding-right: 2%;
 	}
 
 	#convertCell {
@@ -65,20 +101,17 @@ form {
 }
 
 header {
-	font-size: 300%;
 	padding:0px 10px;
 	text-align: center;
 	background-color:#292929;
 }
 
 footer {
-	font-size: 50%;
+	font-size: 70%;
 	color: #fff;
-	padding:0px 10px;
+	padding: 10px;
 	text-align: center;
 	background-color:#292929;
-	border-top:1px solid #33beb6;
-	border-bottom:1px solid #292929;
 }
 
 h1 {
@@ -102,7 +135,8 @@ h1 {
 
 #textHeader {
 	color:#ffffff;
-	/*color:#33beb6;*/
+	/*color:#33beb6;
+	color:#007700;*/
 }
 
 .tableCell {
@@ -115,12 +149,18 @@ h1 {
 
 #pseudocode, #pythonCode, #jsCode {
 	height:300px;
-	width:100%;
+	width:95%;
 	resize:vertical;
+	border:1px solid black;
+	padding:2%;
+	/*background-color:#272727;
+	color:#007700;
+	font-weight:bold;*/
 }
 
 #startBlocks ~ * {
 	height:300px;
-	width:100%;
+	max-width:100%;
+	border:1px solid black;
 	overflow:scroll;
 }
