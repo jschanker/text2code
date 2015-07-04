@@ -221,7 +221,8 @@
 
     namespace.exports.generateControlsForBlockLessThan = function(variableName, toBlock, doBlock) {
         return namespace.exports.generateControlsForBlock(variableName, namespace.exports.generateMathNumber(0), 
-                                                          toBlock, doBlock);
+                                                          namespace.exports.generateMathArithmeticMinus(toBlock,
+                                                          generateMathNumber(1)), doBlock);
     };
 
     var generateControlsWhileUntil = function(isUntil, testBlock, doBlock) {
