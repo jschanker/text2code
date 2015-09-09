@@ -94,6 +94,23 @@
         return XMLCode;
     };
 
+    var generateMathRound = function(OP, valueBlock) {
+        var XMLCode = generateOpenBlockTag("math_round");
+        XMLCode += generateAttributeElement("value", "NUM", valueBlock);
+        XMLCode += generateAttributeElement("field", "OP", OP);
+        XMLCode += "</block>";
+
+        return XMLCode;
+    };
+
+    namespace.exports.generateMathRoundNormal = generateMathRound.bind(null, "ROUND");
+    namespace.exports.generateMathRoundDown = generateMathRound.bind(null, "ROUNDDOWN");
+    namespace.exports.generateMathRoundUp = generateMathRound.bind(null, "ROUNDUP");
+
+    namespace.exports.generateMathArithmeticIntDivide = function(valueBlockA, valueBlockB) {
+        return namespace.exports.generateMathRoundDown(namespace.exports.generateMathArithmeticDivide(valueBlockA, valueBlockB));
+    };
+
     var generateMathSingle = function(OP, valueBlockNum) {
         var XMLCode = generateOpenBlockTag("math_single");
         XMLCode += generateAttributeElement("field", "OP", OP);
@@ -185,6 +202,8 @@
 
     namespace.exports.generateVariablesIncrease = generateUpdateVariable.bind(null, "ADD");
     namespace.exports.generateVariablesDecrease = generateUpdateVariable.bind(null, "MINUS");
+    namespace.exports.generateVariablesMultiply = generateUpdateVariable.bind(null, "MULTIPLY");
+    namespace.exports.generateVariablesDivide = generateUpdateVariable.bind(null, "DIVIDE");
 
     namespace.exports.generateControlsForBlock = function(variableName, fromBlock, toBlock, doBlock, byBlock) {
         var XMLCode = generateOpenBlockTag("controls_for");
