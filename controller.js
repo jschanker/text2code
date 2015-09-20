@@ -7,6 +7,7 @@
     var blockGeneratorArgs = {
         expressionVariable      : [bg.generateVariablesGet, [1]],
         expressionInteger       : [bg.generateMathNumber, [1]],
+        expressionFloat         : [bg.generateMathNumber, [1]],
         expressionTrue          : [bg.generateLogicBooleanTrue, []],
         expressionFalse         : [bg.generateLogicBooleanFalse, []],
         expressionText          : [bg.generateText, [2]],

@@ -5,6 +5,7 @@
     var statementPartSchema = {
         tokens : {
             integer                :  [/-\d+|\d+/],
+            "float"                :  [/-\d*\.\d+|\d*\.\d+/],
             variable               :  [/[A-Za-z_]\w*/],
             word                   :  [/[^""''\n\r\u2028\u2029]*/],
             equals                 :  ["is equal to", "equals to", "equals", "equal to", "equal", "=", "to"],
@@ -70,7 +71,7 @@
             openParenthesis        :  ["\\("],
             closeParenthesis       :  ["\\)"],
             statementSeparator     :  [/\.|;|\r\n|\r|\n/],
-            fullStatementSeparator :  [/\.\s*|\r\n|\r|\n/]
+            fullStatementSeparator :  [/\.\s+|\r\n|\r|\n/]
         },
 
         expressionLogical : {
@@ -98,6 +99,7 @@
 
         expressionNumerical : {
             expressionInteger      :  ["integer"],
+            expressionFloat        :  ["float"],
             expressionSum          :  ["expressionNumerical", "plus", "expressionNumerical"],
             expressionDifference   :  ["expressionNumerical", "minus", "expressionNumerical"],
             expressionProduct      :  ["expressionNumerical", "multiply", "expressionNumerical"],
@@ -172,7 +174,8 @@
                                  "expressionEquals", "expressionDivisibleBy", "expressionFactorOf", "expressionEven",
                                  "expressionOdd", "expressionPositive", "expressionNegative", "expressionPrime",
                                  "expressionLogicalBlock", "expressionTrue", "expressionFalse", "expressionVariable"],
-        expressionNumerical   : ["expressionNumBlock", "expressionInteger", "expressionVariable", "expressionSum", "expressionDifference", 
+        expressionNumerical   : ["expressionNumBlock", "expressionFloat", "expressionInteger", "expressionVariable", 
+                                 "expressionSum", "expressionDifference", 
                                  "expressionProduct", "expressionIntDivide", "expressionDivide", "expressionModulo", "expressionRemainderOf",
                                  "expressionPower", "expressionSquareRoot", "expressionFirstIndexOf", "expressionLastIndexOf"],
         expressionString      : ["expressionStringBlock", "expressionConcatenate", "expressionJoinStr", "expressionPlusStr", 
@@ -389,7 +392,9 @@
 
     namespace.exports.parseText = function(text) {
         var statementCount = text.split(statementPartSchema.tokens.statementSeparator).length;
-        var statements = text.split(statementPartSchema.tokens.fullStatementSeparator[0]);
+        // add space after each period that is not part of a float and split on ". " so 
+        // floats aren't incorrectly parsed as statement separators
+        var statements = (text + " ").replace(/\.(\D)/g,". $1").split(statementPartSchema.tokens.fullStatementSeparator[0]);
         var parsedStatements = [];
 
         statements.forEach(function(statement) {
