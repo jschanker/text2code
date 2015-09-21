@@ -8,13 +8,14 @@
             "float"                :  [/-\d*\.\d+|\d*\.\d+/],
             variable               :  [/[A-Za-z_]\w*/],
             word                   :  [/[^""''\n\r\u2028\u2029]*/],
+            quotedWord             :  [/"[^""''\n\r\u2028\u2029]*"/],
             equals                 :  ["is equal to", "equals to", "equals", "equal to", "equal", "=", "to"],
             comma                  :  [","],
             semicolon              :  [";"],
             "if"                   :  ["if"],
             "else"                 :  ["otherwise", "else"],
             print                  :  ["print", "output"],
-            set                    :  ["set", "let", /s*/],
+            set                    :  ["set", "let", /\s*/],
             then                   :  ["then"],
             commaThen              :  [", then", ",then", ",", "then"],
             "while"                :  ["repeat while", "do while", "while", "keep going while"],
@@ -118,7 +119,8 @@
         },
 
         expressionString : {
-            expressionText         :  ["quotationMark", "word", "quotationMark"],
+            //expressionText         :  ["quotationMark", "word", "quotationMark"],
+            expressionText         :  ["quotedWord"],
             expressionVariable     :  ["variable"],
             expressionConcatenate  :  ["expressionString", "concatenate", "expressionString"],
             expressionJoinStr      :  ["expressionString", "join", "expressionString"],
@@ -286,7 +288,8 @@
         var result = undefined; 
         var resultArr = null; // result for schemaArrFragment[1:]
         var results; // possible results for schemaArrFragment[0]
-        var textRemaining = text.toLowerCase().trim();
+        //var textRemaining = text.toLowerCase().trim();
+        var textRemaining = text.trim();
 
         if(schemaArrFragment.length === 0) {
             return (textRemaining === "" || !matchEntire) ? [[textRemaining]] : [];
@@ -321,7 +324,8 @@
 
         var tokenIndex = getFirstTokenIndex(partsArr);
         var tokenName = tokenIndex >= 0 ? partsArr[tokenIndex] : "NOT_FOUND";
-        var textRemaining = text.trim().toLowerCase();
+        //var textRemaining = text.trim().toLowerCase();
+        var textRemaining = text.trim();
         var textThroughPreviousToken = "";
         var splitOnTokenArr;
         var parseResultsArr = [];
@@ -392,11 +396,46 @@
         return parseResultsArr;
     };
 
+    //var splitOnDoubleQuotes = function(text) {
+    //    a
+    //};
+
     namespace.exports.parseText = function(text) {
         var statementCount = text.split(statementPartSchema.tokens.statementSeparator).length;
-        // add space after each period that is not part of a float and split on ". " so 
-        // floats aren't incorrectly parsed as statement separators
-        var statements = (text + " ").replace(/\.(\D)/g,". $1").split(statementPartSchema.tokens.fullStatementSeparator[0]);
+        var quoteParts = text.split(/\"/g);
+        var insideQuotes = false;
+        var statements = [""];
+
+        // HACKS TO HANDLE floating point numbers and periods in string literals
+
+        if(quoteParts.length % 2 === 1) { // matching open/close double quote pairs
+            insideQuotes = false;
+            quoteParts.forEach(function(quotePart) {
+                var sArr;
+                if(!insideQuotes) {
+                    // add space after each period that is not part of a float and split on ". " so 
+                    // floats aren't incorrectly parsed as statement separators
+                    sArr = (quotePart + " ").replace(/\.(\D)/g,". $1").split(statementPartSchema.tokens.fullStatementSeparator[0]);
+                    sArr = sArr.map(function(part) { return part.toLowerCase(); } );
+                } else {
+                    sArr = [quotePart]; // part of string literal - leave alone
+                }
+                statements[statements.length-1] = statements[statements.length-1] + "\"" + sArr[0];
+                sArr.shift();
+                Array.prototype.push.apply(statements, sArr);
+                insideQuotes = !insideQuotes;
+            });
+        } else {
+            // add space after each period that is not part of a float and split on ". " so 
+            // floats aren't incorrectly parsed as statement separators
+            statements = (text + " ").replace(/\.(\D)/g,". $1").split(statementPartSchema.tokens.fullStatementSeparator[0]);
+        }
+
+        statements[0] = statements[0].substring(1); // remove initial double quotes
+        //alert(statements);
+
+        // END HACKS
+
         var parsedStatements = [];
 
         statements.forEach(function(statement) {

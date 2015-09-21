@@ -10,7 +10,8 @@
         expressionFloat         : [bg.generateMathNumber, [1]],
         expressionTrue          : [bg.generateLogicBooleanTrue, []],
         expressionFalse         : [bg.generateLogicBooleanFalse, []],
-        expressionText          : [bg.generateText, [2]],
+        //expressionText          : [bg.generateText, [2]],
+        expressionText          : [generateTextRemoveQuotes, [1]],
         expressionSum           : [bg.generateMathArithmeticAdd, [1, 3]],
         expressionDifference    : [bg.generateMathArithmeticMinus, [1, 3]],
         expressionProduct       : [bg.generateMathArithmeticMultiply, [1, 3]],
@@ -73,6 +74,12 @@
         statementIfThen         : [bg.generateControlsIf, [2, 4]],
         statementPrint          : [bg.generateTextPrint, [2]]
     };
+
+
+    // HACK : This should be done in parser.js
+    function generateTextRemoveQuotes(str) {
+        return bg.generateText(str.toString().substring(1,str.toString().length-1));
+    }
 
     function identity(x) {
         return x;
